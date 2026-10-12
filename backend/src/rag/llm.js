@@ -25,22 +25,51 @@ Format your answer clearly with:
 3. Any supersession notes
 `;
 
-function generateMockAnswer(contextChunks) {
+export const GROUNDED_CONFIG = {
+  temperature: 0.1,
+  maxOutputTokens: 500,
+  topP: 0.8,
+  stopSequences: []
+};
+
+function generateMockAnswer(contextChunks, options = {}) {
   if (!contextChunks || contextChunks.length === 0) {
     return "I could not find sufficient information in the available airline documents.";
   }
   
   const sources = [...new Set(contextChunks.map(c => `${c.metadata.documentId} - ${c.metadata.documentTitle} (Status: ${c.metadata.status})`))];
   
-  return `[MOCK ANSWER - DEMO MODE]
+  let answer = `[MOCK ANSWER - DEMO MODE]
 1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.
 2. Authoritative documents: ${sources.join(', ')}
 3. Supersession notes: Please verify the status of these documents carefully.`;
+
+  // Apply stop sequences if specified
+  if (options.stopSequences && Array.isArray(options.stopSequences)) {
+    for (const seq of options.stopSequences) {
+      const idx = answer.indexOf(seq);
+      if (idx !== -1) {
+        answer = answer.substring(0, idx);
+      }
+    }
+  }
+
+  // Apply max output tokens limit (simulated approx 4 chars per token)
+  if (options.maxOutputTokens && answer.length > options.maxOutputTokens * 4) {
+    answer = answer.substring(0, options.maxOutputTokens * 4) + '... [TRUNCATED: max_tokens limit reached]';
+  }
+
+  return answer;
 }
 
-export const generateAnswer = async (query, contextChunks) => {
+export const generateAnswer = async (query, contextChunks, customOptions = {}) => {
+  const options = {
+    ...GROUNDED_CONFIG,
+    ...customOptions
+  };
+
   if (config.DEMO_MODE || !genAI) {
-    return generateMockAnswer(contextChunks);
+    return generateMockAnswer(contextChunks, options);
   }
 
   const contextString = contextChunks.map((c, i) => `
@@ -64,7 +93,18 @@ ${contextString}
 `;
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const generationConfig = {
+      temperature: options.temperature,
+      maxOutputTokens: options.maxOutputTokens,
+      topP: options.topP,
+      ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {})
+    };
+
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      generationConfig
+    });
+
     const result = await model.generateContent(prompt);
     return result.response.text();
   } catch (error) {
