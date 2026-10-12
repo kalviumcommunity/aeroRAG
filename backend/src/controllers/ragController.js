@@ -4,10 +4,10 @@ import QueryHistory from '../models/QueryHistory.js';
 
 export const queryRag = async (req, res, next) => {
   try {
-    const { query } = req.body;
+    const { query, options } = req.body;
     if (!query) return res.status(400).json({ error: 'Query is required' });
 
-    const result = await runRagPipeline(query);
+    const result = await runRagPipeline(query, options);
     
     if (req.user) {
       await QueryHistory.create({

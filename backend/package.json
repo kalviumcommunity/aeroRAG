@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "experiment:params": "node scripts/run_parameter_experiments.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
