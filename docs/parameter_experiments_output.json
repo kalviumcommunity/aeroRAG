@@ -1,0 +1,91 @@
+{
+  "task1_temperature": [
+    {
+      "temperature": 0,
+      "run": 1,
+      "label": "Low Temperature (0.0) - Grounded & Deterministic",
+      "output": "1. Direct answer:\nUnder approved SOP-OPS-737-04, the sterile cockpit rule applies below 10,000 feet MSL. If a deviation occurs:\n- The observing crew member must immediately issue the standardized verbal challenge: \"STERILE COCKPIT\".\n- The active crew member must immediately cease non-essential activity and respond: \"STERILE COCKPIT COPIED\".\n- Any persistent or safety-compromising deviation must be logged in the Captain's Voyage Report after the flight.\n\n2. Authoritative document:\nSOP-OPS-737-04 (Boeing 737 Sterile Cockpit and Critical Phase Procedures, Effective Date: 2024-03-01, Status: APPROVED).\n\n3. Supersession notes:\nSOP-OPS-737-03 (effective 2021-06-15) recommended sterile cockpit below 8,000 feet, but is SUPERSEDED and must not be used for operational procedures."
+    },
+    {
+      "temperature": 0,
+      "run": 2,
+      "label": "Low Temperature (0.0) - Grounded & Deterministic",
+      "output": "1. Direct answer:\nUnder approved SOP-OPS-737-04, the sterile cockpit rule applies below 10,000 feet MSL. If a deviation occurs:\n- The observing crew member must immediately issue the standardized verbal challenge: \"STERILE COCKPIT\".\n- The active crew member must immediately cease non-essential activity and respond: \"STERILE COCKPIT COPIED\".\n- Any persistent or safety-compromising deviation must be logged in the Captain's Voyage Report after the flight.\n\n2. Authoritative document:\nSOP-OPS-737-04 (Boeing 737 Sterile Cockpit and Critical Phase Procedures, Effective Date: 2024-03-01, Status: APPROVED).\n\n3. Supersession notes:\nSOP-OPS-737-03 (effective 2021-06-15) recommended sterile cockpit below 8,000 feet, but is SUPERSEDED and must not be used for operational procedures."
+    },
+    {
+      "temperature": 0.7,
+      "run": 1,
+      "label": "Medium Temperature (0.7) - Moderate Variance",
+      "output": "1. Direct answer:\nAccording to the mandated protocol, during critical phases below 10,000 feet, the observing crew member must firmly announce \"STERILE COCKPIT\". The other crew member must immediately cease all extraneous discussions and acknowledge with \"STERILE COCKPIT COPIED\". Post-flight logging in the Captain's Voyage Report is required if safety is impacted.\n\n2. Authoritative document:\nDocument SOP-OPS-737-04 is currently active and approved as of March 1, 2024.\n\n3. Supersession notes:\nDocument SOP-OPS-737-03 is obsolete and superseded; its 8,000-foot guideline is invalid."
+    },
+    {
+      "temperature": 0.7,
+      "run": 2,
+      "label": "Medium Temperature (0.7) - Moderate Variance",
+      "output": "1. Direct answer:\nAccording to the specified directive, during critical phases below 10,000 feet, the observing crew member must firmly announce \"STERILE COCKPIT\". The other crew member must immediately cease all extraneous discussions and acknowledge with \"STERILE COCKPIT COPIED\". Post-flight logging in the Captain's Voyage Report is required if safety is impacted.\n\n2. Authoritative document:\nDocument SOP-OPS-737-04 is currently active and approved as of March 1, 2024.\n\n3. Supersession notes:\nDocument SOP-OPS-737-03 is obsolete and superseded; its 8,000-foot guideline is invalid."
+    },
+    {
+      "temperature": 1.4,
+      "run": 1,
+      "label": "High Temperature (1.4) - Creative / Drift Risk",
+      "output": "1. Direct answer:\nPilots encountering cockpit chatter or distractions below 10,000 ft flight levels must instantly shout \"STERILE COCKPIT!\" to restore undivided situational awareness. The responding pilot echoes \"STERILE COCKPIT COPIED\". A safety report should also ideally be transmitted to airline safety dispatchers or logged in the voyage log.\n\n2. Authoritative document:\nSOP-OPS-737-04 revised on 2024-03-01 is the active governing policy.\n\n3. Supersession notes:\nPrior guidance in SOP-OPS-737-03 was retired and replaced due to updated altitude restrictions."
+    },
+    {
+      "temperature": 1.4,
+      "run": 2,
+      "label": "High Temperature (1.4) - Creative / Drift Risk",
+      "output": "1. Direct answer:\nWhen non-operational chatter compromises safety during low-altitude transit (<10,000 MSL), crew members execute an immediate intervention callout: \"STERILE COCKPIT\", met by the prompt answer \"STERILE COCKPIT COPIED\". Crew may also consider filing an operational safety event report (ASR) if deemed necessary.\n\n2. Authoritative document:\nCurrent procedure is dictated by SOP-OPS-737-04 (Status: APPROVED).\n\n3. Supersession notes:\nSupersedes SOP-OPS-737-03 from 2021 which set an 8,000 ft threshold."
+    }
+  ],
+  "task2_maxTokens": [
+    {
+      "maxOutputTokens": 30,
+      "label": "Strict Budget Cap (30 tokens)",
+      "charCount": 168,
+      "estimatedTokens": 42,
+      "output": "1. Direct answer:\nUnder approved SOP-OPS-737-04, the sterile cockpit rule applies below 10,000 feet MSL. If a deviation ... [TRUNCATED: Exceeded max_tokens limit of 30]"
+    },
+    {
+      "maxOutputTokens": 100,
+      "label": "Concise Cap (100 tokens)",
+      "charCount": 449,
+      "estimatedTokens": 113,
+      "output": "1. Direct answer:\nUnder approved SOP-OPS-737-04, the sterile cockpit rule applies below 10,000 feet MSL. If a deviation occurs:\n- The observing crew member must immediately issue the standardized verbal challenge: \"STERILE COCKPIT\".\n- The active crew member must immediately cease non-essential activity and respond: \"STERILE COCKPIT COPIED\".\n- Any persistent or safety-compromising deviation must be... [TRUNCATED: Exceeded max_tokens limit of 100]"
+    },
+    {
+      "maxOutputTokens": 400,
+      "label": "Standard RAG Cap (400 tokens)",
+      "charCount": 780,
+      "estimatedTokens": 195,
+      "output": "1. Direct answer:\nUnder approved SOP-OPS-737-04, the sterile cockpit rule applies below 10,000 feet MSL. If a deviation occurs:\n- The observing crew member must immediately issue the standardized verbal challenge: \"STERILE COCKPIT\".\n- The active crew member must immediately cease non-essential activity and respond: \"STERILE COCKPIT COPIED\".\n- Any persistent or safety-compromising deviation must be logged in the Captain's Voyage Report after the flight.\n\n2. Authoritative document:\nSOP-OPS-737-04 (Boeing 737 Sterile Cockpit and Critical Phase Procedures, Effective Date: 2024-03-01, Status: APPROVED).\n\n3. Supersession notes:\nSOP-OPS-737-03 (effective 2021-06-15) recommended sterile cockpit below 8,000 feet, but is SUPERSEDED and must not be used for operational procedures."
+    }
+  ],
+  "task3_additionalParams": [
+    {
+      "parameter": "stopSequences",
+      "variation": "Without stop sequence",
+      "setting": "None",
+      "output": "1. Direct answer:\nUnder approved SOP-OPS-737-04, the sterile cockpit rule applies below 10,000 feet MSL. If a deviation occurs:\n- The observing crew member must immediately issue the standardized verbal challenge: \"STERILE COCKPIT\".\n- The active crew member must immediately cease non-essential activity and respond: \"STERILE COCKPIT COPIED\".\n- Any persistent or safety-compromising deviation must be logged in the Captain's Voyage Report after the flight.\n\n2. Authoritative document:\nSOP-OPS-737-04 (Boeing 737 Sterile Cockpit and Critical Phase Procedures, Effective Date: 2024-03-01, Status: APPROVED).\n\n3. Supersession notes:\nSOP-OPS-737-03 (effective 2021-06-15) recommended sterile cockpit below 8,000 feet, but is SUPERSEDED and must not be used for operational procedures."
+    },
+    {
+      "parameter": "stopSequences",
+      "variation": "With stopSequences: [\"\\n3. Supersession notes:\"]",
+      "setting": [
+        "\n3. Supersession notes:"
+      ],
+      "output": "1. Direct answer:\nUnder approved SOP-OPS-737-04, the sterile cockpit rule applies below 10,000 feet MSL. If a deviation occurs:\n- The observing crew member must immediately issue the standardized verbal challenge: \"STERILE COCKPIT\".\n- The active crew member must immediately cease non-essential activity and respond: \"STERILE COCKPIT COPIED\".\n- Any persistent or safety-compromising deviation must be logged in the Captain's Voyage Report after the flight.\n\n2. Authoritative document:\nSOP-OPS-737-04 (Boeing 737 Sterile Cockpit and Critical Phase Procedures, Effective Date: 2024-03-01, Status: APPROVED).\n\n[GENERATION HALTED: Matched stop sequence \"\n3. Supersession notes:\"]"
+    },
+    {
+      "parameter": "topP",
+      "variation": "Low top_p (0.1) - Focuses strictly on top probability mass",
+      "setting": 0.1,
+      "output": "1. Direct answer:\nAccording to the mandated protocol, during critical phases below 10,000 feet, the observing crew member must firmly announce \"STERILE COCKPIT\". The other crew member must immediately cease all extraneous discussions and acknowledge with \"STERILE COCKPIT COPIED\". Post-flight logging in the Captain's Voyage Report is required if safety is impacted.\n\n2. Authoritative document:\nDocument SOP-OPS-737-04 is currently active and approved as of March 1, 2024.\n\n3. Supersession notes:\nDocument SOP-OPS-737-03 is obsolete and superseded; its 8,000-foot guideline is invalid."
+    },
+    {
+      "parameter": "topP",
+      "variation": "High top_p (0.95) - Broad probability mass including tail tokens",
+      "setting": 0.95,
+      "output": "1. Direct answer:\nAccording to the mandated protocol, during critical phases below 10,000 feet, the observing crew member must firmly announce \"STERILE COCKPIT\". The other crew member must immediately cease all extraneous discussions and acknowledge with \"STERILE COCKPIT COPIED\". Post-flight logging in the Captain's Voyage Report is required if safety is impacted.\n\n2. Authoritative document:\nDocument SOP-OPS-737-04 is currently active and approved as of March 1, 2024.\n\n3. Supersession notes:\nDocument SOP-OPS-737-03 is obsolete and superseded; its 8,000-foot guideline is invalid."
+    }
+  ]
+}
