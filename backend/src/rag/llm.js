@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import config from '../config/env.js';
 import logger from '../utils/logger.js';
+import {
+  STRUCTURED_SYSTEM_PROMPT,
+  processLlmOutput
+} from './structuredOutput.js';
 
 let genAI;
 if (config.GOOGLE_API_KEY && !config.DEMO_MODE) {
@@ -34,11 +38,40 @@ export const GROUNDED_CONFIG = {
 
 function generateMockAnswer(contextChunks, options = {}) {
   if (!contextChunks || contextChunks.length === 0) {
+    if (options.structured) {
+      return JSON.stringify({
+        answer: "I could not find sufficient information in the available airline documents.",
+        source: {
+          documentId: "NONE",
+          title: "No Matching Documentation",
+          status: "N/A"
+        },
+        confidence: 0.0,
+        supersededNotes: null,
+        isGrounded: false
+      });
+    }
     return "I could not find sufficient information in the available airline documents.";
   }
   
   const sources = [...new Set(contextChunks.map(c => `${c.metadata.documentId} - ${c.metadata.documentTitle} (Status: ${c.metadata.status})`))];
-  
+  const primaryDoc = contextChunks[0]?.metadata || {};
+
+  if (options.structured) {
+    return JSON.stringify({
+      answer: `Based on verified airline documentation (${primaryDoc.documentId || 'SOP'}), the requested procedure is strictly governed by approved operating standards.`,
+      source: {
+        documentId: primaryDoc.documentId || 'SOP-OPS-737-04',
+        title: primaryDoc.documentTitle || 'Boeing 737 Standard Operating Procedures',
+        status: primaryDoc.status || 'APPROVED',
+        effectiveDate: primaryDoc.effectiveDate || '2024-03-01'
+      },
+      confidence: 0.95,
+      supersededNotes: primaryDoc.supersedes ? `Supersedes previous standard ${primaryDoc.supersedes}` : null,
+      isGrounded: true
+    });
+  }
+
   let answer = `[MOCK ANSWER - DEMO MODE]
 1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.
 2. Authoritative documents: ${sources.join(', ')}
@@ -69,7 +102,11 @@ export const generateAnswer = async (query, contextChunks, customOptions = {}) =
   };
 
   if (config.DEMO_MODE || !genAI) {
-    return generateMockAnswer(contextChunks, options);
+    const mockRaw = generateMockAnswer(contextChunks, options);
+    if (options.structured) {
+      return processLlmOutput(mockRaw);
+    }
+    return mockRaw;
   }
 
   const contextString = contextChunks.map((c, i) => `
@@ -83,8 +120,10 @@ Content:
 ${c.document}
 `).join('\n');
 
+  const selectedPrompt = options.structured ? STRUCTURED_SYSTEM_PROMPT : SYSTEM_PROMPT;
+
   const prompt = `
-${SYSTEM_PROMPT}
+${selectedPrompt}
 
 User Query: ${query}
 
@@ -97,7 +136,9 @@ ${contextString}
       temperature: options.temperature,
       maxOutputTokens: options.maxOutputTokens,
       topP: options.topP,
-      ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {})
+      ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {}),
+      // Task 1: Use response-format / JSON mode where available
+      ...(options.structured ? { responseMimeType: 'application/json' } : {})
     };
 
     const model = genAI.getGenerativeModel({
@@ -106,9 +147,19 @@ ${contextString}
     });
 
     const result = await model.generateContent(prompt);
-    return result.response.text();
+    const rawText = result.response.text();
+
+    if (options.structured) {
+      return processLlmOutput(rawText);
+    }
+
+    return rawText;
   } catch (error) {
     logger.error(`Error generating LLM answer: ${error.message}`);
     throw error;
   }
+};
+
+export const generateStructuredAnswer = async (query, contextChunks, customOptions = {}) => {
+  return generateAnswer(query, contextChunks, { ...customOptions, structured: true });
 };

@@ -7,7 +7,14 @@ export const runRagPipeline = async (query, options = {}) => {
   const retrievedChunks = await retrieve(query, 5);
 
   // 3 & 4. Call LLM with generation parameters
-  const answer = await generateAnswer(query, retrievedChunks, options);
+  const llmResponse = await generateAnswer(query, retrievedChunks, options);
+
+  // Check if response is structured object or plain string
+  const isStructured = typeof llmResponse === 'object' && llmResponse !== null;
+  const structuredData = isStructured ? llmResponse : null;
+  const answerText = isStructured
+    ? (llmResponse.data?.answer || 'Failed to generate valid structured response')
+    : llmResponse;
 
   // 5. Build sources array
   const sourcesMap = new Map();
@@ -23,11 +30,17 @@ export const runRagPipeline = async (query, options = {}) => {
     }
   });
 
+  const resolvedSources = (structuredData?.data?.source)
+    ? [structuredData.data.source]
+    : Array.from(sourcesMap.values());
+
   return {
-    answer,
-    sources: Array.from(sourcesMap.values()),
+    answer: answerText,
+    structured: structuredData,
+    sources: resolvedSources,
     retrievedChunks: retrievedChunks.length,
-    confidence: 0.9, // mock confidence
+    confidence: structuredData?.data?.confidence ?? 0.9,
+    isGrounded: structuredData?.data?.isGrounded ?? true,
     demoMode: config.DEMO_MODE,
     generationOptions: options
   };
