@@ -1,94 +1,71 @@
-import { getCollection } from '../config/chroma.js';
+import { createCollection, DEFAULT_COLLECTION_CONFIG } from './collectionManager.js';
 import logger from '../utils/logger.js';
-import config from '../config/env.js';
 
-// In-memory fallback
-let inMemoryStore = [];
+let activeCollection = null;
 
-function cosineSimilarity(vecA, vecB) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
+async function getOrInitCollection() {
+  if (!activeCollection) {
+    activeCollection = await createCollection(DEFAULT_COLLECTION_CONFIG);
   }
-  if (normA === 0 || normB === 0) return 0;
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  return activeCollection;
 }
 
 export const upsertChunks = async (chunks, embeddings, metadatas, ids) => {
-  try {
-    const collection = await getCollection('aerorag_chunks');
-    await collection.add({
-      ids: ids,
-      embeddings: embeddings,
-      metadatas: metadatas,
-      documents: chunks
+  const collection = await getOrInitCollection();
+  const records = [];
+
+  for (let i = 0; i < ids.length; i++) {
+    records.push({
+      id: ids[i],
+      vector: embeddings[i],
+      text: chunks[i],
+      metadata: {
+        source: metadatas[i].documentId || metadatas[i].source || 'UNKNOWN',
+        document_title: metadatas[i].documentTitle || '',
+        document_type: metadatas[i].documentType || '',
+        status: metadatas[i].status || 'APPROVED',
+        effective_date: metadatas[i].effectiveDate || '',
+        chunk_index: metadatas[i].chunkIndex !== undefined ? metadatas[i].chunkIndex : i,
+        section: metadatas[i].section || '',
+        ...metadatas[i]
+      }
     });
-    logger.info(`Successfully upserted ${ids.length} chunks to ChromaDB.`);
-  } catch (error) {
-    logger.error(`Failed to upsert to ChromaDB, using in-memory store. Error: ${error.message}`);
-    // In-memory fallback
-    for (let i = 0; i < ids.length; i++) {
-      // Remove existing
-      inMemoryStore = inMemoryStore.filter(item => item.id !== ids[i]);
-      inMemoryStore.push({
-        id: ids[i],
-        embedding: embeddings[i],
-        metadata: metadatas[i],
-        document: chunks[i]
-      });
-    }
   }
+
+  await collection.upsert(records);
+  logger.info(`Successfully upserted ${records.length} chunks to vector store.`);
+  return { upsertedCount: records.length };
 };
 
 export const deleteDocumentChunks = async (documentId) => {
-  try {
-    const collection = await getCollection('aerorag_chunks');
-    await collection.delete({
-      where: { documentId: documentId }
-    });
-    logger.info(`Deleted chunks for document ${documentId} from ChromaDB`);
-  } catch (error) {
-    logger.warn(`Failed to delete from ChromaDB, checking in-memory store. Error: ${error.message}`);
-    inMemoryStore = inMemoryStore.filter(item => item.metadata.documentId !== documentId);
+  const collection = await getOrInitCollection();
+  let deletedCount = 0;
+  for (const [id, record] of collection.records.entries()) {
+    if (record.metadata.source === documentId || record.metadata.documentId === documentId) {
+      collection.records.delete(id);
+      deletedCount++;
+    }
   }
+  if (deletedCount > 0) {
+    collection.saveToDisk();
+  }
+  logger.info(`Deleted ${deletedCount} chunks for document ${documentId}`);
+  return deletedCount;
 };
 
 export const querySimilar = async (queryEmbedding, topK = 5) => {
-  try {
-    const collection = await getCollection('aerorag_chunks');
-    const results = await collection.query({
-      queryEmbeddings: [queryEmbedding],
-      nResults: topK
-    });
-    
-    const formattedResults = [];
-    if (results.ids[0]) {
-      for (let i = 0; i < results.ids[0].length; i++) {
-        formattedResults.push({
-          score: results.distances[0][i], // Note: Chroma returns distance, lower is more similar
-          metadata: results.metadatas[0][i],
-          document: results.documents[0][i]
-        });
-      }
-    }
-    return formattedResults;
-  } catch (error) {
-    logger.warn(`ChromaDB query failed, using in-memory store fallback. Error: ${error.message}`);
-    // Fallback search
-    let scored = inMemoryStore.map(item => ({
-      ...item,
-      score: cosineSimilarity(queryEmbedding, item.embedding)
-    }));
-    // Sort descending by score for cosine similarity (higher is better)
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, topK).map(item => ({
-      score: item.score,
-      metadata: item.metadata,
-      document: item.document
-    }));
-  }
+  const collection = await getOrInitCollection();
+  const results = await collection.query(queryEmbedding, topK);
+
+  return results.map(r => ({
+    score: r.score,
+    distance: r.distance,
+    metadata: r.metadata,
+    document: r.text
+  }));
+};
+
+export const getRecordById = async (id) => {
+  const collection = await getOrInitCollection();
+  return await collection.get(id);
 };
