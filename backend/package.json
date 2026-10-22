@@ -6,7 +6,9 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "experiment:params": "node scripts/run_parameter_experiments.js",
-    "experiment:structured": "node scripts/run_structured_output_experiments.js"
+    "experiment:structured": "node scripts/run_structured_output_experiments.js",
+    "loader:multi-format": "node scripts/run_document_loader.js",
+    "loader:py": "python scripts/run_document_loader.py"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

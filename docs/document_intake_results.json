@@ -1,0 +1,56 @@
+{
+  "summary": {
+    "total_inspected": 7,
+    "loaded_count": 4,
+    "skipped_count": 3,
+    "supported_formats": [
+      "html",
+      "md",
+      "pdf",
+      "txt"
+    ]
+  },
+  "loaded_documents": [
+    {
+      "source": "bulletin_ops_2024_08.html",
+      "format": "html",
+      "char_length": 742,
+      "sample_preview": "Safety Directive OPS-BUL-2024-08 Effective Date: August 12, 2024 Department: Fli"
+    },
+    {
+      "source": "emergency_descent_checklist.md",
+      "format": "md",
+      "char_length": 812,
+      "sample_preview": "# Quick Reference Handbook (QRH) - Emergency Descent  **Document ID:** QRH-EMER-"
+    },
+    {
+      "source": "fuel_reserve_policy.txt",
+      "format": "txt",
+      "char_length": 911,
+      "sample_preview": "STANDARD OPERATING PROCEDURE: DISPATCH FUEL RESERVES Document Reference: SOP-FUE"
+    },
+    {
+      "source": "sop_sterile_cockpit.pdf",
+      "format": "pdf",
+      "char_length": 578,
+      "sample_preview": "AeroRAG SOP-OPS-737-04: Sterile Cockpit Procedures Document ID: SOP-OPS-737-04 |"
+    }
+  ],
+  "skipped_files": [
+    {
+      "source": "corrupt_document.pdf",
+      "format": "pdf",
+      "error": "Corrupt or unreadable PDF: Stream has ended unexpectedly"
+    },
+    {
+      "source": "radar_telemetry_dump.bin",
+      "format": "bin",
+      "error": "unsupported format: .bin"
+    },
+    {
+      "source": "non_existent_procedure.pdf",
+      "format": "pdf",
+      "error": "File not found: C:\\Users\\ishu6\\OneDrive\\Desktop\\aero\\aeroRAG\\data\\sample_corpus\\non_existent_procedure.pdf"
+    }
+  ]
+}

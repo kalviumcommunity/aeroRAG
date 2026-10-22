@@ -17,10 +17,14 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf' || file.mimetype === 'text/plain') {
+  const allowedMimes = ['application/pdf', 'text/plain', 'text/html', 'text/markdown'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedExts = ['.pdf', '.txt', '.html', '.htm', '.md', '.markdown'];
+
+  if (allowedMimes.includes(file.mimetype) || allowedExts.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type, only PDF and TXT are allowed!'), false);
+    cb(new Error('Invalid file type! Only PDF, TXT, HTML, and Markdown files are supported.'), false);
   }
 };
 

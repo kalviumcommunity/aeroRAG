@@ -12,7 +12,7 @@ const documentSchema = new mongoose.Schema({
   supersedes: [{ type: String }],
   supersededBy: { type: String },
   filePath: { type: String, required: true },
-  fileType: { type: String, enum: ['pdf', 'txt'], required: true },
+  fileType: { type: String, enum: ['pdf', 'txt', 'html', 'htm', 'md', 'markdown'], required: true },
   pageCount: { type: Number },
   chunkCount: { type: Number, default: 0 },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

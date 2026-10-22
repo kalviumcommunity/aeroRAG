@@ -41,3 +41,34 @@ Or via npm:
 cd backend
 npm run experiment:structured
 ```
+
+---
+
+## 3.19 Document Loading & Multi-Format Intake
+
+This branch (`feat/3.19-document-loading-multi-format-intake`) implements a multi-format document loader capable of loading heterogeneous files (PDF, HTML, Markdown, and TXT) into a unified plain-text representation while preserving source identity and gracefully handling missing or corrupt files.
+
+### Key Highlights
+- **Task 1 — Multi-Format Intake:** Loads PDF (`.pdf`), HTML (`.html`, `.htm`), Markdown (`.md`), and plain text (`.txt`) into clean, normalized plain-text strings.
+- **Task 2 — Graceful Error Handling:** Survives missing files, corrupted PDFs (`corrupt_document.pdf`), and unsupported formats (`.bin`) without crashing the ingestion batch.
+- **Task 3 — Source Identity Preservation:** Associates each loaded document with its source filename and filepath for downstream RAG citations.
+- **Task 4 — Intake Confirmation:** Confirms successful intake by printing character counts and sample previews (`OK {source}: {len} chars | '{sample}'`).
+- **Task 5 — Sample Corpus & Artifacts:** Committed sample corpus in [`data/sample_corpus/`](data/sample_corpus/), intake report in [`docs/document_intake_results.md`](docs/document_intake_results.md) and [`docs/document_intake_results.json`](docs/document_intake_results.json), with a full guide in [`docs/DOCUMENT_LOADING_GUIDE.md`](docs/DOCUMENT_LOADING_GUIDE.md).
+
+### Running Document Loaders
+
+**Python Loader:**
+```bash
+python backend/scripts/run_document_loader.py
+```
+
+**Node.js Loader:**
+```bash
+node backend/scripts/run_document_loader.js
+```
+
+Or via npm:
+```bash
+cd backend
+npm run loader:multi-format
+```
