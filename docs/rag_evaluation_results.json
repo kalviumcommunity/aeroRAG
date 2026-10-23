@@ -1,0 +1,252 @@
+{
+  "generatedAt": "2026-10-23T08:51:38.595Z",
+  "datasetName": "AeroRAG airline procedure smoke evaluation",
+  "datasetDescription": "Questions grounded in the checked-in vector-store fixture. Expected facts and sources are limited to its indexed chunk.",
+  "indexedChunkCount": 1,
+  "summary": {
+    "testCaseCount": 5,
+    "correctness": 0.1,
+    "grounding": 0.2,
+    "citationAccuracy": 0,
+    "citationPrecision": 0,
+    "citationRecall": 0,
+    "citationsExpected": 3,
+    "citationsEmitted": 5,
+    "citationsCorrect": 0,
+    "failureCount": 5,
+    "demoMode": true,
+    "notableFailures": [
+      "Evaluation ran in DEMO_MODE; answers are produced by the deterministic mock generator, not a live language model.",
+      "sterile-cockpit-altitude: emitted source metadata has no documentId, so citation identity cannot be verified.",
+      "sterile-cockpit-prohibited-activity: emitted source metadata has no documentId, so citation identity cannot be verified.",
+      "sterile-cockpit-document-source: emitted source metadata has no documentId, so citation identity cannot be verified.",
+      "sterile-cockpit-challenge-callout: the system did not abstain although the indexed context contains no answer.",
+      "fuel-reserve: the system did not abstain although the indexed context contains no answer."
+    ]
+  },
+  "cases": [
+    {
+      "id": "sterile-cockpit-altitude",
+      "question": "At what altitude does the sterile cockpit rule apply?",
+      "answerable": true,
+      "expectedAnswer": "The rule applies below 10,000 feet MSL.",
+      "expectedSources": [
+        "SOP-OPS-737-04"
+      ],
+      "answer": "[MOCK ANSWER - DEMO MODE]\n1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.\n2. Authoritative documents: undefined - undefined (Status: APPROVED)\n3. Supersession notes: Please verify the status of these documents carefully.",
+      "correctness": 0,
+      "grounding": 0,
+      "citationAccuracy": 0,
+      "factScores": [
+        {
+          "id": "altitude-threshold",
+          "answerMatched": false,
+          "evidenceRetrieved": true,
+          "grounded": false
+        }
+      ],
+      "abstained": false,
+      "actualCitations": [
+        {
+          "documentId": null,
+          "title": null,
+          "status": "APPROVED"
+        }
+      ],
+      "citationChecks": [
+        {
+          "documentId": null,
+          "expected": false,
+          "supported": false
+        }
+      ],
+      "retrievedChunks": [
+        {
+          "documentId": "SOP-OPS-737-04",
+          "title": "Boeing 737 Sterile Cockpit Procedures",
+          "status": "APPROVED",
+          "effectiveDate": "2024-03-01",
+          "section": "1. Sterile Cockpit Environment",
+          "text": "1. Sterile Cockpit Environment: The sterile cockpit rule is strictly enforced during all critical phases of flight below 10,000 feet MSL. Non-essential communication is prohibited."
+        }
+      ],
+      "retrievedChunkCount": 1
+    },
+    {
+      "id": "sterile-cockpit-prohibited-activity",
+      "question": "What kind of communication is prohibited during sterile cockpit conditions?",
+      "answerable": true,
+      "expectedAnswer": "Non-essential communication is prohibited.",
+      "expectedSources": [
+        "SOP-OPS-737-04"
+      ],
+      "answer": "[MOCK ANSWER - DEMO MODE]\n1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.\n2. Authoritative documents: undefined - undefined (Status: APPROVED)\n3. Supersession notes: Please verify the status of these documents carefully.",
+      "correctness": 0,
+      "grounding": 0,
+      "citationAccuracy": 0,
+      "factScores": [
+        {
+          "id": "non-essential-communication",
+          "answerMatched": false,
+          "evidenceRetrieved": true,
+          "grounded": false
+        }
+      ],
+      "abstained": false,
+      "actualCitations": [
+        {
+          "documentId": null,
+          "title": null,
+          "status": "APPROVED"
+        }
+      ],
+      "citationChecks": [
+        {
+          "documentId": null,
+          "expected": false,
+          "supported": false
+        }
+      ],
+      "retrievedChunks": [
+        {
+          "documentId": "SOP-OPS-737-04",
+          "title": "Boeing 737 Sterile Cockpit Procedures",
+          "status": "APPROVED",
+          "effectiveDate": "2024-03-01",
+          "section": "1. Sterile Cockpit Environment",
+          "text": "1. Sterile Cockpit Environment: The sterile cockpit rule is strictly enforced during all critical phases of flight below 10,000 feet MSL. Non-essential communication is prohibited."
+        }
+      ],
+      "retrievedChunkCount": 1
+    },
+    {
+      "id": "sterile-cockpit-document-source",
+      "question": "Which approved document contains the sterile cockpit altitude rule?",
+      "answerable": true,
+      "expectedAnswer": "SOP-OPS-737-04, Boeing 737 Sterile Cockpit Procedures, status APPROVED.",
+      "expectedSources": [
+        "SOP-OPS-737-04"
+      ],
+      "answer": "[MOCK ANSWER - DEMO MODE]\n1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.\n2. Authoritative documents: undefined - undefined (Status: APPROVED)\n3. Supersession notes: Please verify the status of these documents carefully.",
+      "correctness": 0.5,
+      "grounding": 1,
+      "citationAccuracy": 0,
+      "factScores": [
+        {
+          "id": "source-document-id",
+          "answerMatched": false,
+          "evidenceRetrieved": true,
+          "grounded": false
+        },
+        {
+          "id": "source-document-status",
+          "answerMatched": true,
+          "evidenceRetrieved": true,
+          "grounded": true
+        }
+      ],
+      "abstained": false,
+      "actualCitations": [
+        {
+          "documentId": null,
+          "title": null,
+          "status": "APPROVED"
+        }
+      ],
+      "citationChecks": [
+        {
+          "documentId": null,
+          "expected": false,
+          "supported": false
+        }
+      ],
+      "retrievedChunks": [
+        {
+          "documentId": "SOP-OPS-737-04",
+          "title": "Boeing 737 Sterile Cockpit Procedures",
+          "status": "APPROVED",
+          "effectiveDate": "2024-03-01",
+          "section": "1. Sterile Cockpit Environment",
+          "text": "1. Sterile Cockpit Environment: The sterile cockpit rule is strictly enforced during all critical phases of flight below 10,000 feet MSL. Non-essential communication is prohibited."
+        }
+      ],
+      "retrievedChunkCount": 1
+    },
+    {
+      "id": "sterile-cockpit-challenge-callout",
+      "question": "What exact challenge phrase must a crew member say when sterile cockpit is violated?",
+      "answerable": false,
+      "expectedAnswer": "I could not find sufficient information in the available airline documents.",
+      "expectedSources": [],
+      "answer": "[MOCK ANSWER - DEMO MODE]\n1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.\n2. Authoritative documents: undefined - undefined (Status: APPROVED)\n3. Supersession notes: Please verify the status of these documents carefully.",
+      "correctness": 0,
+      "grounding": 0,
+      "citationAccuracy": 0,
+      "factScores": [],
+      "abstained": false,
+      "actualCitations": [
+        {
+          "documentId": null,
+          "title": null,
+          "status": "APPROVED"
+        }
+      ],
+      "citationChecks": [
+        {
+          "documentId": null,
+          "expected": false,
+          "supported": false
+        }
+      ],
+      "retrievedChunks": [
+        {
+          "documentId": "SOP-OPS-737-04",
+          "title": "Boeing 737 Sterile Cockpit Procedures",
+          "status": "APPROVED",
+          "effectiveDate": "2024-03-01",
+          "section": "1. Sterile Cockpit Environment",
+          "text": "1. Sterile Cockpit Environment: The sterile cockpit rule is strictly enforced during all critical phases of flight below 10,000 feet MSL. Non-essential communication is prohibited."
+        }
+      ],
+      "retrievedChunkCount": 1
+    },
+    {
+      "id": "fuel-reserve",
+      "question": "What is the required IFR alternate fuel reserve?",
+      "answerable": false,
+      "expectedAnswer": "I could not find sufficient information in the available airline documents.",
+      "expectedSources": [],
+      "answer": "[MOCK ANSWER - DEMO MODE]\n1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.\n2. Authoritative documents: undefined - undefined (Status: APPROVED)\n3. Supersession notes: Please verify the status of these documents carefully.",
+      "correctness": 0,
+      "grounding": 0,
+      "citationAccuracy": 0,
+      "factScores": [],
+      "abstained": false,
+      "actualCitations": [
+        {
+          "documentId": null,
+          "title": null,
+          "status": "APPROVED"
+        }
+      ],
+      "citationChecks": [
+        {
+          "documentId": null,
+          "expected": false,
+          "supported": false
+        }
+      ],
+      "retrievedChunks": [
+        {
+          "documentId": "SOP-OPS-737-04",
+          "title": "Boeing 737 Sterile Cockpit Procedures",
+          "status": "APPROVED",
+          "effectiveDate": "2024-03-01",
+          "section": "1. Sterile Cockpit Environment",
+          "text": "1. Sterile Cockpit Environment: The sterile cockpit rule is strictly enforced during all critical phases of flight below 10,000 feet MSL. Non-essential communication is prohibited."
+        }
+      ],
+      "retrievedChunkCount": 1
+    }
+  ]
+}
