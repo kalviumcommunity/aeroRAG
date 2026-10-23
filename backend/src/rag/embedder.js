@@ -1,9 +1,16 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import config from '../config/env.js';
 import logger from '../utils/logger.js';
 
+let GoogleGenerativeAI = null;
+try {
+  const mod = await import('@google/generative-ai');
+  GoogleGenerativeAI = mod.GoogleGenerativeAI;
+} catch (e) {
+  // Not installed or offline
+}
+
 let genAI;
-if (config.GOOGLE_API_KEY && !config.DEMO_MODE) {
+if (GoogleGenerativeAI && config.GOOGLE_API_KEY && !config.DEMO_MODE) {
   genAI = new GoogleGenerativeAI(config.GOOGLE_API_KEY);
 }
 
@@ -12,7 +19,7 @@ function mockEmbed(text) {
   for (let i = 0; i < text.length && i < 768; i++) {
     arr[i % 768] += text.charCodeAt(i) / 1000;
   }
-  const mag = Math.sqrt(arr.reduce((s,v) => s + v * v, 0)) || 1;
+  const mag = Math.sqrt(arr.reduce((s, v) => s + v * v, 0)) || 1;
   return Array.from(arr).map(v => v / mag);
 }
 
