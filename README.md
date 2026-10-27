@@ -63,3 +63,14 @@ Or via npm:
 cd backend
 npm run vectordb:py
 ```
+
+## RAG Evaluation
+
+The deterministic smoke evaluation runs the RAG pipeline against a small test set based on the checked-in vector-store fixture. It scores expected-fact correctness, evidence grounding, and source citation accuracy, including abstention questions. It forces offline `DEMO_MODE`, so results measure the demo generator and local fixture, not live Gemini quality.
+
+From the repository root:
+```bash
+npm --prefix backend run evaluate:rag
+```
+
+The test cases are in [`backend/evaluation/rag_test_set.json`](backend/evaluation/rag_test_set.json). The runner writes per-case results to [`docs/rag_evaluation_results.json`](docs/rag_evaluation_results.json) and a scored summary to [`docs/rag_evaluation_results.md`](docs/rag_evaluation_results.md). The lexical scoring checks are reproducible smoke metrics, not a replacement for human evaluation.
