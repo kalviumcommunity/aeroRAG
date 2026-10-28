@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "test": "node --test tests/**/*.test.js",
+    "test:mock": "node --test tests/llmClient.test.js",
+    "test:smoke": "node scripts/smoke_test_llm.js",
+    "smoke:llm": "node scripts/smoke_test_llm.js",
     "experiment:params": "node scripts/run_parameter_experiments.js",
     "experiment:structured": "node scripts/run_structured_output_experiments.js",
     "evaluate:rag": "node scripts/evaluate_rag.js",
