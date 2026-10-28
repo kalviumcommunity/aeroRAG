@@ -15,6 +15,11 @@ import {
   InvalidResponseError,
   ProviderError
 } from './llmClient.js';
+import {
+  AirlineProcedurePromptTemplate,
+  defaultAirlinePromptTemplate,
+  AIRLINE_SYSTEM_INSTRUCTIONS
+} from './promptTemplates.js';
 
 let genAI;
 const activeApiKey = config.GOOGLE_API_KEY || config.GEMINI_API_KEY;
@@ -22,23 +27,7 @@ if (activeApiKey && !config.DEMO_MODE) {
   genAI = new GoogleGenerativeAI(activeApiKey);
 }
 
-const SYSTEM_PROMPT = `
-You are AeroRAG, an airline procedure verification assistant.
-
-Answer ONLY using the provided retrieved airline documents.
-Never invent procedures, regulations, dates, or operational instructions.
-If the retrieved documents do not contain enough information, clearly state:
-"I could not find sufficient information in the available airline documents."
-
-When multiple documents discuss the same procedure, prefer the latest valid document according to effective date and supersession metadata.
-Always identify the source document used for the answer.
-If an older document has been superseded, explicitly mention it should not be treated as the current procedure.
-
-Format your answer clearly with:
-1. Direct answer
-2. Which document is current/authoritative
-3. Any supersession notes
-`;
+export const SYSTEM_PROMPT = AIRLINE_SYSTEM_INSTRUCTIONS;
 
 export const GROUNDED_CONFIG = {
   temperature: 0.1,
@@ -65,7 +54,7 @@ function generateMockAnswer(contextChunks, options = {}) {
     return "I could not find sufficient information in the available airline documents.";
   }
   
-  const sources = [...new Set(contextChunks.map(c => `${c.metadata.documentId} - ${c.metadata.documentTitle} (Status: ${c.metadata.status})`))];
+  const sources = [...new Set(contextChunks.map(c => `${c.metadata?.documentId || c.id} - ${c.metadata?.documentTitle || c.metadata?.title || 'Procedure'} (Status: ${c.metadata?.status || 'APPROVED'})`))];
   const primaryDoc = contextChunks[0]?.metadata || {};
 
   if (options.structured) {
@@ -120,27 +109,13 @@ export const generateAnswer = async (query, contextChunks, customOptions = {}) =
     return mockRaw;
   }
 
-  const contextString = contextChunks.map((c, i) => `
---- Source ${i + 1} ---
-Document ID: ${c.metadata.documentId}
-Title: ${c.metadata.documentTitle}
-Status: ${c.metadata.status}
-Effective Date: ${c.metadata.effectiveDate}
-Supersedes: ${c.metadata.supersedes || 'None'}
-Content:
-${c.document}
-`).join('\n');
-
-  const selectedPrompt = options.structured ? STRUCTURED_SYSTEM_PROMPT : SYSTEM_PROMPT;
-
-  const prompt = `
-${selectedPrompt}
-
-User Query: ${query}
-
-Retrieved Documents:
-${contextString}
-`;
+  // Use maintainable prompt template
+  const templateBuilder = options.promptTemplate || defaultAirlinePromptTemplate;
+  const { fullPrompt } = templateBuilder.buildPrompt({
+    query,
+    chunks: contextChunks,
+    structured: Boolean(options.structured)
+  });
 
   try {
     const generationConfig = {
@@ -148,17 +123,16 @@ ${contextString}
       maxOutputTokens: options.maxOutputTokens,
       topP: options.topP,
       ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {}),
-      // Task 1: Use response-format / JSON mode where available
       ...(options.structured ? { responseMimeType: 'application/json' } : {})
     };
 
-    const modelName = options.model || config.LLM_MODEL || 'gemini-1.5-flash';
+    const modelName = options.model || config.LLM_MODEL || 'gemini-3.5-flash-lite';
     const model = genAI.getGenerativeModel({
       model: modelName,
       generationConfig
     });
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(fullPrompt);
     const rawText = result.response.text();
 
     if (options.structured) {
@@ -184,5 +158,7 @@ export {
   LLMTimeoutError,
   RateLimitError,
   InvalidResponseError,
-  ProviderError
+  ProviderError,
+  AirlineProcedurePromptTemplate,
+  defaultAirlinePromptTemplate
 };
