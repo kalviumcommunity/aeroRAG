@@ -5,10 +5,21 @@ import {
   STRUCTURED_SYSTEM_PROMPT,
   processLlmOutput
 } from './structuredOutput.js';
+import {
+  createLLMClient,
+  getLLMClient,
+  LLMClientError,
+  MissingConfigurationError,
+  LLMTimeoutError,
+  RateLimitError,
+  InvalidResponseError,
+  ProviderError
+} from './llmClient.js';
 
 let genAI;
-if (config.GOOGLE_API_KEY && !config.DEMO_MODE) {
-  genAI = new GoogleGenerativeAI(config.GOOGLE_API_KEY);
+const activeApiKey = config.GOOGLE_API_KEY || config.GEMINI_API_KEY;
+if (activeApiKey && !config.DEMO_MODE) {
+  genAI = new GoogleGenerativeAI(activeApiKey);
 }
 
 const SYSTEM_PROMPT = `
@@ -141,8 +152,9 @@ ${contextString}
       ...(options.structured ? { responseMimeType: 'application/json' } : {})
     };
 
+    const modelName = options.model || config.LLM_MODEL || 'gemini-1.5-flash';
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash',
+      model: modelName,
       generationConfig
     });
 
@@ -162,4 +174,15 @@ ${contextString}
 
 export const generateStructuredAnswer = async (query, contextChunks, customOptions = {}) => {
   return generateAnswer(query, contextChunks, { ...customOptions, structured: true });
+};
+
+export {
+  createLLMClient,
+  getLLMClient,
+  LLMClientError,
+  MissingConfigurationError,
+  LLMTimeoutError,
+  RateLimitError,
+  InvalidResponseError,
+  ProviderError
 };
