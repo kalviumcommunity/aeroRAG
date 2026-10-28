@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-10-28T05:56:19.250Z",
+  "milestone": "3.12 — LLM API access and first completion",
+  "provider": "gemini",
+  "configuredModel": "gemini-3.5-flash-lite",
+  "hasCredentials": true,
+  "result": {
+    "status": "SUCCESS",
+    "latencyMs": 1158,
+    "prompt": "In airline flight operations, what is the sterile cockpit rule? Respond in 2 concise sentences.",
+    "completion": "The sterile cockpit rule prohibits flight crew members from engaging in non-essential activities, conversations, or duties that are unrelated to the safe operation of the aircraft during critical phases of flight, typically below 10,000 feet. Its primary purpose is to eliminate distractions and maximize vigilance during the most safety-sensitive times of takeoff and landing.",
+    "model": "gemini-3.5-flash-lite",
+    "usage": {
+      "promptTokens": 20,
+      "completionTokens": 69,
+      "totalTokens": 89
+    },
+    "finishReason": "STOP"
+  }
+}
