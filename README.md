@@ -6,7 +6,7 @@ AeroRAG is an enterprise Retrieval-Augmented Generation (RAG) assistant designed
 
 ## 3.12 LLM API Access & First Completion (Day 5)
 
-This branch (`feat/day-05-llm-client`) implements a minimal, tested LLM client adapter that sends messages to a configurable chat model, normalizes completions, and guarantees safe, non-crashing error handling.
+This milestone (`feat/day-05-llm-client`) implements a minimal, tested LLM client adapter that sends messages to a configurable chat model, normalizes completions, and guarantees safe, non-crashing error handling.
 
 ### Key Highlights
 - **Configurable LLM Client Adapter:** Unified abstraction supporting Google Gemini (`GeminiAdapter`) and local mock execution (`MockLLMAdapter`) via factory pattern (`createLLMClient`).
@@ -21,20 +21,33 @@ This branch (`feat/day-05-llm-client`) implements a minimal, tested LLM client a
 - **Real API Smoke Test Runner:** `backend/scripts/smoke_test_llm.js` executes live verification calls against Google Gemini and reports results honestly to [`docs/llm_smoke_test_results.json`](docs/llm_smoke_test_results.json).
 - **Architecture Guide:** Comprehensive architectural documentation in [`docs/LLM_CLIENT_ADAPTER_GUIDE.md`](docs/LLM_CLIENT_ADAPTER_GUIDE.md).
 
-### Running Tests & Smoke Verification
+---
 
-**Run Automated Mock Tests (Zero-Cost):**
+## 3.13 & 3.18 Prompt Construction & Reusable Templates (Day 6)
+
+This branch (`feat/day-06-prompt-templates`) implements maintainable, reusable prompt templates for the airline procedure assistant with strict role separation, safe template rendering, prompt injection defense, and procedure validity disambiguation.
+
+### Key Highlights
+- **Strict Role Separation:** Complete physical segregation between system safety instructions (`<system_instructions>`), untrusted retrieved evidence (`<retrieved_evidence>`), and operator queries (`<user_query>`).
+- **The Four Procedure Validity States:**
+  1. *Verified Current:* `APPROVED` / `ACTIVE` procedures treated as active operational authority for flight crews.
+  2. *Historical Document:* `ARCHIVED` manuals identified as reference only, not active guidance.
+  3. *Superseded Content:* `SUPERSEDED` SOPs explicitly identified with mandatory flight crew safety warnings not to follow obsolete standards.
+  4. *Insufficient Evidence / Unsupported Questions:* Strict refusal mandate returning `"I could not find sufficient information in the available airline documents."` without speculating on flight parameters.
+- **Conflict Resolution Precedence:** Deterministic priority rules: Status (`APPROVED` > `SUPERSEDED` > `ARCHIVED`) > Effective Date (Newer > Older) > Specificity (Aircraft SOP > General Fleet Policy).
+- **Anti-Injection Firewall & Sanitization:** Neutralizes XML breakout tags (`</retrieved_evidence>`, `<user_query>`), strips control characters, detects injection signatures (`ignore previous instructions`, `system override`), and commands the model to treat retrieved evidence strictly as passive data.
+- **Reusable Template Engine (`PromptTemplate`):** Explicit placeholder parsing (`{{var}}`), missing variable validation (`TemplateValidationError`), and safe string rendering.
+- **Architecture Guide:** Comprehensive architectural guide in [`docs/PROMPT_TEMPLATES_GUIDE.md`](docs/PROMPT_TEMPLATES_GUIDE.md).
+
+### Running Tests
+
+**Run All Automated Tests:**
 ```bash
 npm --prefix backend test
 ```
-Or specifically:
+Or run the prompt template suite specifically:
 ```bash
-npm --prefix backend run test:mock
-```
-
-**Run Real API Smoke Test:**
-```bash
-npm --prefix backend run test:smoke
+node --test backend/tests/promptTemplates.test.js
 ```
 
 ---
