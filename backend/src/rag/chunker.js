@@ -47,6 +47,34 @@ export const DEFAULT_CHUNK_CONFIG = Object.freeze({
 });
 
 /**
+ * Normalizes and validates chunking configuration options.
+ * Enforces token-aware limits and bounds overlap to strictly prevent runaway chunk growth.
+ *
+ * @param {Object} [options={}] - Input options.
+ * @returns {Object} Normalized, validated options.
+ */
+export function normalizeChunkingOptions(options = {}) {
+  const maxChunkSize = Math.max(10, Number(options.maxChunkSize) || DEFAULT_CHUNK_CONFIG.maxChunkSize);
+  const minChunkSize = Math.max(1, Math.min(Number(options.minChunkSize) || DEFAULT_CHUNK_CONFIG.minChunkSize, Math.floor(maxChunkSize / 2)));
+
+  // Bounded overlap: strictly between 0 and floor(maxChunkSize / 2)
+  // Prevents runaway chunk growth where overlap exceeds remaining capacity
+  const rawOverlap = options.overlap !== undefined ? Number(options.overlap) : DEFAULT_CHUNK_CONFIG.overlap;
+  const maxSafeOverlap = Math.floor(maxChunkSize / 2);
+  const overlap = Math.max(0, Math.min(isNaN(rawOverlap) ? DEFAULT_CHUNK_CONFIG.overlap : rawOverlap, maxSafeOverlap));
+
+  return {
+    ...DEFAULT_CHUNK_CONFIG,
+    ...options,
+    maxChunkSize,
+    minChunkSize,
+    overlap,
+    unit: options.unit || DEFAULT_CHUNK_CONFIG.unit,
+    strategy: options.strategy || DEFAULT_CHUNK_CONFIG.strategy
+  };
+}
+
+/**
  * Measures the size of text according to the configured unit ('tokens', 'characters', 'words').
  *
  * @param {string} text - Input text.
@@ -159,14 +187,13 @@ function createChunkRecord({
  * Strategy 1: Fixed-Size Token/Character-Bounded Sliding Window
  * ============================================================================
  */
-export function splitFixedSize(text, options = {}) {
+export function splitFixedSize(text, rawOptions = {}) {
   if (!text || typeof text !== 'string' || text.trim().length === 0) {
     return [];
   }
 
-  const maxChunkSize = options.maxChunkSize || DEFAULT_CHUNK_CONFIG.maxChunkSize;
-  const overlap = Math.min(options.overlap !== undefined ? options.overlap : DEFAULT_CHUNK_CONFIG.overlap, Math.floor(maxChunkSize / 2));
-  const unit = options.unit || DEFAULT_CHUNK_CONFIG.unit;
+  const options = normalizeChunkingOptions(rawOptions);
+  const { maxChunkSize, overlap, unit } = options;
 
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
@@ -828,18 +855,20 @@ export function chunkText(text, optionsOrMaxTokens = {}, overlapTokens) {
   }
 
   // Normalize options from positional arguments or object
-  let options = {};
+  let rawOptions = {};
   if (typeof optionsOrMaxTokens === 'number') {
-    options = {
+    rawOptions = {
       maxChunkSize: optionsOrMaxTokens,
       overlap: typeof overlapTokens === 'number' ? overlapTokens : DEFAULT_CHUNK_CONFIG.overlap,
       strategy: CHUNK_STRATEGIES.PROCEDURE_AWARE
     };
   } else if (typeof optionsOrMaxTokens === 'object') {
-    options = { ...DEFAULT_CHUNK_CONFIG, ...optionsOrMaxTokens };
+    rawOptions = { ...DEFAULT_CHUNK_CONFIG, ...optionsOrMaxTokens };
   } else {
-    options = { ...DEFAULT_CHUNK_CONFIG };
+    rawOptions = { ...DEFAULT_CHUNK_CONFIG };
   }
+
+  const options = normalizeChunkingOptions(rawOptions);
 
   const strategy = options.strategy || DEFAULT_CHUNK_CONFIG.strategy;
   let chunks;

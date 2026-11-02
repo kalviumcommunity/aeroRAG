@@ -219,6 +219,42 @@ npm --prefix backend test
 
 ---
 
+## 3.23 & 3.24 Token-Aware Sizing, Overlap & Corpus Validation (Day 13)
+
+This milestone (`feat/day-13-ingestion-validation`) implements token-aware chunk limits, bounded overlap runaway growth defense, idempotent rerun handling, and a comprehensive corpus ingestion validation report.
+
+### Key Highlights
+- **Token-Aware Chunk Sizing Limits:**
+  - Enforces strict token ceilings on chunks (`maxChunkSize`, default 400 tokens) using verified token estimators.
+  - Normalizes options via `normalizeChunkingOptions` and validates unit compatibility (`tokens`, `characters`, `words`).
+- **Configurable Overlap & Runaway Growth Defense:**
+  - Configurable `overlap` bounded strictly: 0 <= overlap <= floor(maxChunkSize / 2).
+  - Guaranteed forward progress prevents runaway chunk growth, zero-step looping, and chunk snowballing across multi-paragraph or repetitive checklists.
+- **Corpus Ingestion Validation Report (`IngestionValidationReport`):**
+  - Aggregates metrics: `totalDocuments`, `processedDocuments`, `failedDocuments`, `duplicateInputs`, `chunksCreated`, `extractedPages`, `extractedSections`, `metadataErrors`, and `successRate`.
+  - Captures per-document status (`SUCCESS`, `FAILED`, `DUPLICATE_SKIPPED`, `DUPLICATE_UPDATED`), pages, sections, chunks, and content hashes.
+- **Partial Failure Resilience & Non-Silent Failure Reporting:**
+  - Corrupted, missing, empty, or unsupported documents fail gracefully without halting the remaining corpus.
+  - Failures are recorded honestly in `report.failures` with diagnostic stage (`FILE_LOAD`, `TEXT_EXTRACTION`, etc.) and exact error messages.
+- **Duplicate Detection & Safe Idempotent Reruns:**
+  - Detects duplicate inputs via SHA-256 content hashes and document identifiers.
+  - Supports configurable `DUPLICATE_STRATEGY`: `SKIP` (safe idempotent reruns without duplicate chunk creation), `UPDATE` (content refresh), or `ERROR` (strict policy enforcement).
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/INGESTION_VALIDATION_GUIDE.md`](docs/INGESTION_VALIDATION_GUIDE.md).
+
+### Running Ingestion Validation Tests
+
+**Run Ingestion Validation Unit Tests:**
+```bash
+node --test backend/tests/ingestionValidator.test.js
+```
+
+**Run All Backend Tests (218 Passing Tests):**
+```bash
+npm --prefix backend test
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.
