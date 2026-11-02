@@ -3,7 +3,14 @@ import config from '../config/env.js';
 import logger from '../utils/logger.js';
 import {
   STRUCTURED_SYSTEM_PROMPT,
-  processLlmOutput
+  STRUCTURED_RAG_SCHEMA,
+  APPLICABILITY_STATUSES,
+  UNCERTAINTY_LEVELS,
+  REFUSAL_REASONS,
+  DOCUMENT_STATUSES,
+  processLlmOutput,
+  parseStructuredOutput,
+  validateStructuredOutput
 } from './structuredOutput.js';
 import {
   createLLMClient,
@@ -19,7 +26,13 @@ import {
   estimateTokenCountSync,
   ContextBudgetManager,
   ContextBudgetExceededError,
-  OversizedMessageError
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES
 } from './llmClient.js';
 import {
   AirlineProcedurePromptTemplate,
@@ -35,23 +48,23 @@ if (activeApiKey && !config.DEMO_MODE) {
 
 export const SYSTEM_PROMPT = AIRLINE_SYSTEM_INSTRUCTIONS;
 
-export const GROUNDED_CONFIG = {
-  temperature: 0.1,
-  maxOutputTokens: 500,
-  topP: 0.8,
-  stopSequences: []
-};
+export const GROUNDED_CONFIG = { ...DEFAULT_GROUNDED_PARAMETERS };
 
 function generateMockAnswer(contextChunks, options = {}) {
   if (!contextChunks || contextChunks.length === 0) {
     if (options.structured) {
       return JSON.stringify({
         answer: "I could not find sufficient information in the available airline documents.",
-        source: {
-          documentId: "NONE",
-          title: "No Matching Documentation",
-          status: "N/A"
+        evidenceReferences: [],
+        applicabilityStatus: "NOT_APPLICABLE",
+        uncertainty: {
+          level: "COMPLETE",
+          score: 1.0,
+          reason: "No matching documentation found"
         },
+        refusalReason: "INSUFFICIENT_EVIDENCE",
+        // legacy compatibility
+        source: null,
         confidence: 0.0,
         supersededNotes: null,
         isGrounded: false
@@ -65,7 +78,26 @@ function generateMockAnswer(contextChunks, options = {}) {
 
   if (options.structured) {
     return JSON.stringify({
-      answer: `Based on verified airline documentation (${primaryDoc.documentId || 'SOP'}), the requested procedure is strictly governed by approved operating standards.`,
+      answer: `Based on verified airline documentation (${primaryDoc.documentId || 'SOP-OPS-737-04'}), the requested procedure is strictly governed by approved operating standards.`,
+      evidenceReferences: [
+        {
+          documentId: primaryDoc.documentId || 'SOP-OPS-737-04',
+          title: primaryDoc.documentTitle || 'Boeing 737 Standard Operating Procedures',
+          section: primaryDoc.section || 'General Procedures',
+          page: primaryDoc.page || 1,
+          effectiveDate: primaryDoc.effectiveDate || '2024-03-01',
+          status: (primaryDoc.status || 'APPROVED').toUpperCase(),
+          quote: contextChunks[0]?.document ? contextChunks[0].document.substring(0, 150) : null
+        }
+      ],
+      applicabilityStatus: primaryDoc.status === 'SUPERSEDED' ? 'SUPERSEDED' : 'APPLICABLE',
+      uncertainty: {
+        level: "LOW",
+        score: 0.05,
+        reason: "Direct statement in current approved SOP"
+      },
+      refusalReason: null,
+      // legacy compatibility
       source: {
         documentId: primaryDoc.documentId || 'SOP-OPS-737-04',
         title: primaryDoc.documentTitle || 'Boeing 737 Standard Operating Procedures',
@@ -102,8 +134,13 @@ function generateMockAnswer(contextChunks, options = {}) {
 }
 
 export const generateAnswer = async (query, contextChunks, customOptions = {}) => {
+  // Validate model parameters
+  const paramValidation = validateModelParameters(customOptions, 'gemini', {
+    strict: Boolean(customOptions.strict)
+  });
   const options = {
     ...GROUNDED_CONFIG,
+    ...paramValidation.parameters,
     ...customOptions
   };
 
@@ -128,6 +165,7 @@ export const generateAnswer = async (query, contextChunks, customOptions = {}) =
       temperature: options.temperature,
       maxOutputTokens: options.maxOutputTokens,
       topP: options.topP,
+      ...(options.topK ? { topK: options.topK } : {}),
       ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {}),
       ...(options.structured ? { responseMimeType: 'application/json' } : {})
     };
@@ -172,5 +210,20 @@ export {
   estimateTokenCountSync,
   ContextBudgetManager,
   ContextBudgetExceededError,
-  OversizedMessageError
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES,
+  STRUCTURED_SYSTEM_PROMPT,
+  STRUCTURED_RAG_SCHEMA,
+  APPLICABILITY_STATUSES,
+  UNCERTAINTY_LEVELS,
+  REFUSAL_REASONS,
+  DOCUMENT_STATUSES,
+  processLlmOutput,
+  parseStructuredOutput,
+  validateStructuredOutput
 };

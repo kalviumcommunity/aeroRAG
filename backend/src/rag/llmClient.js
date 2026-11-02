@@ -9,6 +9,14 @@ import {
   ContextBudgetExceededError,
   OversizedMessageError
 } from './tokenContextManager.js';
+import {
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES
+} from './modelParameters.js';
 
 // ============================================================================
 // Error Hierarchy
@@ -178,7 +186,7 @@ export class GeminiAdapter extends BaseLLMAdapter {
   }
 
   /**
-   * Sends a message to the Gemini chat model with timeout, rate limit, and error handling.
+   * Sends a message to the Gemini chat model with parameter validation, timeout, rate limit, and error handling.
    */
   async sendMessage(promptOrMessages, callOptions = {}) {
     this.validateConfig();
@@ -190,23 +198,25 @@ export class GeminiAdapter extends BaseLLMAdapter {
 
     const modelName = callOptions.model || this.model;
     const timeoutMs = callOptions.timeoutMs ?? this.timeoutMs;
-    const temperature = callOptions.temperature ?? this.defaultTemperature;
-    const maxOutputTokens = callOptions.maxOutputTokens ?? this.defaultMaxTokens;
-    const topP = callOptions.topP ?? this.defaultTopP;
-    const stopSequences = callOptions.stopSequences || [];
-    const responseMimeType = callOptions.responseMimeType;
 
+    // Milestone 3.16: Validate model parameters & handle unsupported parameters explicitly
+    const paramValidation = validateModelParameters(callOptions, 'gemini', {
+      strict: Boolean(callOptions.strict)
+    });
+
+    const validated = paramValidation.parameters;
     const generationConfig = {
-      temperature,
-      maxOutputTokens,
-      topP,
-      ...(stopSequences.length > 0 ? { stopSequences } : {}),
-      ...(responseMimeType ? { responseMimeType } : {})
+      temperature: validated.temperature,
+      maxOutputTokens: validated.maxOutputTokens,
+      topP: validated.topP,
+      ...(validated.topK ? { topK: validated.topK } : {}),
+      ...(validated.stopSequences && validated.stopSequences.length > 0 ? { stopSequences: validated.stopSequences } : {}),
+      ...(validated.responseMimeType ? { responseMimeType: validated.responseMimeType } : {})
     };
 
     const startTime = Date.now();
 
-    // Setup timeout race with AbortController
+    // Setup timeout race with timer
     let timerId = null;
     const timeoutPromise = new Promise((_, reject) => {
       timerId = setTimeout(() => {
@@ -223,7 +233,7 @@ export class GeminiAdapter extends BaseLLMAdapter {
         generationConfig
       });
 
-      // Race between the SDK call and timeout
+      // Race between SDK call and timeout
       const result = await Promise.race([
         modelInstance.generateContent(promptText),
         timeoutPromise
@@ -299,15 +309,18 @@ export class GeminiAdapter extends BaseLLMAdapter {
         finishReason,
         latencyMs,
         metadata: {
-          temperature,
-          maxOutputTokens,
-          topP,
-          stopSequences
+          temperature: validated.temperature,
+          maxOutputTokens: validated.maxOutputTokens,
+          topP: validated.topP,
+          topK: validated.topK,
+          stopSequences: validated.stopSequences,
+          parameterWarnings: paramValidation.warnings,
+          unsupportedParameters: paramValidation.unsupportedParameters
         },
         raw: result
       };
     } catch (error) {
-      if (error instanceof LLMClientError) {
+      if (error instanceof LLMClientError || error instanceof ModelParameterError) {
         throw error;
       }
 
@@ -337,7 +350,6 @@ export class GeminiAdapter extends BaseLLMAdapter {
         );
       }
 
-      // Check for generic 5xx server errors
       const is5xx =
         errorMsg.includes('500') ||
         errorMsg.includes('503') ||
@@ -370,6 +382,7 @@ export class MockLLMAdapter extends BaseLLMAdapter {
     this.simulateInvalidResponse = Boolean(options.simulateInvalidResponse);
     this.simulateMissingConfig = Boolean(options.simulateMissingConfig);
     this.simulateProviderError = options.simulateProviderError || false;
+    this.targetProvider = options.targetProvider || null;
     
     // Call telemetry
     this.callCount = 0;
@@ -404,7 +417,13 @@ export class MockLLMAdapter extends BaseLLMAdapter {
       throw new MissingConfigurationError('Mock simulated missing configuration error');
     }
 
-    // 2. Simulate Timeout
+    // 2. Validate model parameters & check provider incompatibilities
+    const targetProvider = callOptions.validateProvider || this.targetProvider || 'mock';
+    const paramValidation = validateModelParameters(callOptions, targetProvider, {
+      strict: Boolean(callOptions.strict)
+    });
+
+    // 3. Simulate Timeout
     if (this.simulateTimeout || callOptions.simulateTimeout) {
       const timeout = callOptions.timeoutMs || 100;
       await new Promise(r => setTimeout(r, Math.min(timeout, 30)));
@@ -414,21 +433,21 @@ export class MockLLMAdapter extends BaseLLMAdapter {
       );
     }
 
-    // 3. Simulate Rate Limit (429)
+    // 4. Simulate Rate Limit (429)
     if (this.simulateRateLimit || callOptions.simulateRateLimit) {
       throw new RateLimitError('Mock rate limit exceeded (429 Quota Exceeded)', {
         retryAfterMs: 3000
       });
     }
 
-    // 4. Simulate Invalid Response
+    // 5. Simulate Invalid Response
     if (this.simulateInvalidResponse || callOptions.simulateInvalidResponse) {
       throw new InvalidResponseError('Mock provider returned invalid response candidate structure', {
         details: { candidates: [] }
       });
     }
 
-    // 5. Simulate Provider Error (500 / 503)
+    // 6. Simulate Provider Error (500 / 503)
     if (this.simulateProviderError || callOptions.simulateProviderError) {
       const errSpec = callOptions.simulateProviderError || this.simulateProviderError;
       const message = typeof errSpec === 'object' && errSpec.message ? errSpec.message : 'Mock upstream service failure';
@@ -443,12 +462,50 @@ export class MockLLMAdapter extends BaseLLMAdapter {
 
     // Determine completion text
     let text = '';
+    const isStructured = callOptions.structured || callOptions.responseMimeType === 'application/json';
+
     if (this.mockResponses && this.mockResponses.length > 0) {
       text = this.mockResponses.shift();
     } else if (typeof this.cannedResponse === 'function') {
       text = this.cannedResponse(promptText, callOptions);
     } else if (typeof this.cannedResponse === 'string') {
       text = this.cannedResponse;
+    } else if (isStructured) {
+      if (callOptions.simulateRefusal) {
+        text = JSON.stringify({
+          answer: "I could not find sufficient information in the available airline documents.",
+          evidenceReferences: [],
+          applicabilityStatus: "NOT_APPLICABLE",
+          uncertainty: {
+            level: "COMPLETE",
+            score: 1.0,
+            reason: "No matching documentation found"
+          },
+          refusalReason: "INSUFFICIENT_EVIDENCE"
+        });
+      } else {
+        text = JSON.stringify({
+          answer: "Based on verified airline documentation (SOP-OPS-737-04), the sterile cockpit rule is strictly enforced below 10,000 feet MSL.",
+          evidenceReferences: [
+            {
+              documentId: "SOP-OPS-737-04",
+              title: "Boeing 737 Sterile Cockpit and Critical Phase Procedures",
+              section: "1. Sterile Cockpit Environment",
+              page: 1,
+              effectiveDate: "2024-03-01",
+              status: "APPROVED",
+              quote: "The sterile cockpit rule is strictly enforced during all critical phases below 10,000 feet MSL."
+            }
+          ],
+          applicabilityStatus: "APPLICABLE",
+          uncertainty: {
+            level: "LOW",
+            score: 0.05,
+            reason: "Direct statement in current approved SOP"
+          },
+          refusalReason: null
+        });
+      }
     } else {
       // Default domain-relevant mock answer for airline procedure verification
       text = `[AERORAG MOCK COMPLETION]
@@ -458,7 +515,7 @@ export class MockLLMAdapter extends BaseLLMAdapter {
     }
 
     // Apply stopSequences if specified
-    const stopSequences = callOptions.stopSequences || [];
+    const stopSequences = paramValidation.parameters.stopSequences || [];
     if (Array.isArray(stopSequences) && stopSequences.length > 0) {
       for (const seq of stopSequences) {
         const idx = text.indexOf(seq);
@@ -469,7 +526,7 @@ export class MockLLMAdapter extends BaseLLMAdapter {
     }
 
     // Apply maxOutputTokens simulation
-    const maxTokens = callOptions.maxOutputTokens || 500;
+    const maxTokens = paramValidation.parameters.maxOutputTokens || 500;
     if (text.length > maxTokens * 4) {
       text = text.substring(0, maxTokens * 4) + '... [TRUNCATED]';
     }
@@ -494,10 +551,13 @@ export class MockLLMAdapter extends BaseLLMAdapter {
       finishReason: 'STOP',
       latencyMs: this.simulatedLatencyMs,
       metadata: {
-        temperature: callOptions.temperature ?? 0.1,
+        temperature: paramValidation.parameters.temperature,
         maxOutputTokens: maxTokens,
-        topP: callOptions.topP ?? 0.8,
-        stopSequences
+        topP: paramValidation.parameters.topP,
+        topK: paramValidation.parameters.topK,
+        stopSequences,
+        parameterWarnings: paramValidation.warnings,
+        unsupportedParameters: paramValidation.unsupportedParameters
       },
       raw: { mock: true, promptText, callIndex: this.callCount }
     };
@@ -547,7 +607,13 @@ export {
   estimateTokenCountSync,
   ContextBudgetManager,
   ContextBudgetExceededError,
-  OversizedMessageError
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES
 };
 
 export default {
@@ -567,5 +633,11 @@ export default {
   estimateTokenCountSync,
   ContextBudgetManager,
   ContextBudgetExceededError,
-  OversizedMessageError
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES
 };

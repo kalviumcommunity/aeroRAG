@@ -25,7 +25,7 @@ This milestone (`feat/day-05-llm-client`) implements a minimal, tested LLM clien
 
 ## 3.13 & 3.18 Prompt Construction & Reusable Templates (Day 6)
 
-This branch (`feat/day-06-prompt-templates`) implements maintainable, reusable prompt templates for the airline procedure assistant with strict role separation, safe template rendering, prompt injection defense, and procedure validity disambiguation.
+This milestone (`feat/day-06-prompt-templates`) implements maintainable, reusable prompt templates for the airline procedure assistant with strict role separation, safe template rendering, prompt injection defense, and procedure validity disambiguation.
 
 ### Key Highlights
 - **Strict Role Separation:** Complete physical segregation between system safety instructions (`<system_instructions>`), untrusted retrieved evidence (`<retrieved_evidence>`), and operator queries (`<user_query>`).
@@ -43,7 +43,7 @@ This branch (`feat/day-06-prompt-templates`) implements maintainable, reusable p
 
 ## 3.14 & 3.15 Tokens, Cost Estimation & Context Management (Day 7)
 
-This branch (`feat/day-07-token-context-management`) implements token estimation utilities, pricing-governed cost estimation, context window budget allocation, and bounded conversation history management.
+This milestone (`feat/day-07-token-context-management`) implements token estimation utilities, pricing-governed cost estimation, context window budget allocation, and bounded conversation history management.
 
 ### Key Highlights
 - **Token Estimation & Counting:** Employs model tokenizers when online (`countTokens()`) or aviation-calibrated heuristic estimation (~3.8 chars/token) when offline, explicitly flagging whether token counts are exact or approximate.
@@ -53,49 +53,41 @@ This branch (`feat/day-07-token-context-management`) implements token estimation
 - **Bounded Conversation History:** Deterministically trims dialogue turns using FIFO (preserving newest interactions) and executes pluggable summarization hooks (`summarizeHook`) when history overflows. Guards against oversized messages (`OversizedMessageError`).
 - **Architecture Guide:** Detailed architectural specification in [`docs/TOKEN_CONTEXT_MANAGEMENT_GUIDE.md`](docs/TOKEN_CONTEXT_MANAGEMENT_GUIDE.md).
 
+---
+
+## 3.16 & 3.17 Model Output Control & Structured Response Handling (Day 8)
+
+This branch (`feat/day-08-structured-output`) implements configurable model parameters, provider incompatibility handling, a typed response schema, and a resilient multi-stage JSON parser and validator.
+
+### Key Highlights
+- **Configurable Model Parameters with Grounded Defaults:** Validates parameters (`temperature: 0.1`, `maxOutputTokens: 500`, `topP: 0.8`, `topK: 40`, `stopSequences: []`) and clamps out-of-bounds values safely.
+- **Provider-Specific Incompatibility Handling:** Explicitly handles parameters unsupported by Google Gemini (e.g. `presencePenalty`, `frequencyPenalty`, `logitBias`), dropping them with warnings in permissive mode or throwing `UnsupportedParameterError` in strict mode to prevent provider API failures.
+- **Typed Procedure Response Schema (`STRUCTURED_RAG_SCHEMA`):**
+  - `answer`: Verified operational instruction text or explicit refusal statement.
+  - `evidenceReferences`: Array of authoritative source records (`documentId`, `title`, `section`, `page`, `effectiveDate`, `status`, `quote`).
+  - `applicabilityStatus`: Enum (`APPLICABLE`, `SUPERSEDED`, `HISTORICAL`, `CONDITIONAL`, `NOT_APPLICABLE`, `UNKNOWN`).
+  - `uncertainty`: Object with `level` (`LOW`, `MEDIUM`, `HIGH`, `COMPLETE`), `score` (`0.0 - 1.0`), and `reason`.
+  - `refusalReason`: Procedural refusal classification (`INSUFFICIENT_EVIDENCE`, `SAFETY_RESTRICTION`, `UNSUPPORTED_PROCEDURE`, `OUT_OF_DOMAIN`, or `null`).
+- **Multi-Stage Resilient Parser:** Automatically recovers from markdown code fences, conversational preambles/postscripts, trailing commas, unquoted keys, single quotes, and truncated token streams.
+- **Safe Enum Normalization & Anti-Fabrication:** Normalizes colloquial status synonyms without crashing, and guarantees that evidence citations are **never** fabricated on missing documentation or refusal.
+- **Architecture Guide:** Detailed architectural specification in [`docs/MODEL_OUTPUT_CONTROL_GUIDE.md`](docs/MODEL_OUTPUT_CONTROL_GUIDE.md).
+
 ### Running Tests
 
 **Run All Automated Tests:**
 ```bash
 npm --prefix backend test
 ```
-Or run the token and context manager test suite specifically:
+Or run the structured output and model parameters test suite specifically:
 ```bash
-node --test backend/tests/tokenContextManager.test.js
+node --test backend/tests/structuredOutput.test.js
 ```
-
----
-
-## 3.16 Model Parameters & Output Control
-
-This branch (`feat/3.16-model-parameters-output-control`) implements model parameter controls, empirical experiments, and documented grounded settings for reliable, low-cost RAG generation.
-
-### Key Highlights
-- **Task 1 — Temperature Variation:** Demonstrates deterministic, repeatable, and hallucination-free output at low temperature ($T = 0.0 - 0.2$) versus high temperature ($T = 1.4$).
-- **Task 2 — Max Tokens Length Capping:** Implements `maxOutputTokens` / `max_tokens` caps to guard against runaway generation and control API token costs.
-- **Task 3 — Stop Sequences & Nucleus Sampling (`top_p`):** Tests stopping generation at defined delimiter sequences and compares nucleus sampling behavior.
-- **Task 4 — Grounded Settings Documentation:** Detailed architectural guide in [`docs/GROUNDED_SETTINGS.md`](docs/GROUNDED_SETTINGS.md).
-- **Task 5 — Experiment Outputs & Artifacts:** Complete comparisons in [`docs/parameter_experiments_output.md`](docs/parameter_experiments_output.md) and [`docs/parameter_experiments_output.json`](docs/parameter_experiments_output.json).
-
----
-
-## 3.17 Structured Output & JSON Response Handling
-
-This branch (`feat/3.17-structured-output-json-handling`) implements end-to-end structured JSON response handling, resilient parsing, malformed output recovery, and schema field validation.
-
-### Key Highlights
-- **Task 1 — JSON Schema & Response Formatting:** Instructs model via schema prompting and native `application/json` mode.
-- **Task 2 — Usable Object Parsing:** Safely parses model outputs into strongly-typed objects consumed by backend and frontend.
-- **Task 3 — Resilient Malformed JSON Recovery:** Recovers from markdown fences (````json````), conversational preambles/postscripts, trailing commas, unquoted keys, and truncated streams without throwing unhandled exceptions.
-- **Task 4 — Required Field Validation:** Validates `answer` and `source` presence, normalizes alternative data types, and reports diagnostics.
-- **Task 5 — Parsed Results Artifacts:** Documented test cases in [`docs/structured_output_results.md`](docs/structured_output_results.md) and [`docs/structured_output_results.json`](docs/structured_output_results.json).
-- **Architecture & Video Guide:** Detailed guide in [`docs/STRUCTURED_OUTPUT_GUIDE.md`](docs/STRUCTURED_OUTPUT_GUIDE.md).
 
 ---
 
 ## 3.30 Vector Database Setup & Collection Design
 
-This branch (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.
+This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.
 
 ### Key Highlights
 - **Task 1 — Vector Database Setup & Reachability:** Connects to vector database via local config and environment variables (`VECTOR_DB_URL`, `VECTOR_DIMENSION`, `COLLECTION_NAME`), verifying reachability and health status.
