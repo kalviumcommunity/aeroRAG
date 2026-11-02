@@ -1,21 +1,31 @@
-import fs from 'fs/promises';
-import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+import { loadDocument } from '../rag/documentLoader.js';
 
-export const extractText = async (filePath, fileType) => {
-  if (fileType === 'pdf') {
-    const dataBuffer = await fs.readFile(filePath);
-    const data = await pdfParse(dataBuffer);
-    return {
-      text: data.text,
-      pageCount: data.numpages
-    };
-  } else if (fileType === 'txt') {
-    const text = await fs.readFile(filePath, 'utf-8');
-    return {
-      text,
-      pageCount: 1
-    };
-  } else {
-    throw new Error('Unsupported file type');
-  }
+/**
+ * Extracts plain text from multiple document formats:
+ * - PDF (.pdf)
+ * - Microsoft Word (.docx)
+ * - Plain Text (.txt)
+ * - Markdown (.md, .markdown)
+ * - HTML (.html, .htm)
+ *
+ * Integrates with Milestone 3.19 modular document loaders, security sanitization,
+ * and scanned PDF detection.
+ */
+export const extractText = async (filePath, explicitFileType = null) => {
+  const doc = await loadDocument(filePath, {
+    fileType: explicitFileType,
+    throwOnError: true
+  });
+
+  return {
+    text: doc.text,
+    pageCount: doc.pageCount,
+    format: doc.format,
+    isScanned: doc.isScanned,
+    requiresOcr: doc.requiresOcr,
+    status: doc.status,
+    charCount: doc.charCount,
+    wordCount: doc.wordCount,
+    metadata: doc.metadata
+  };
 };
