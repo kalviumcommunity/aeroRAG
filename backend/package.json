@@ -12,6 +12,7 @@
     "experiment:params": "node scripts/run_parameter_experiments.js",
     "experiment:structured": "node scripts/run_structured_output_experiments.js",
     "evaluate:rag": "node scripts/evaluate_rag.js",
+    "evaluate:similarity": "node scripts/run_similarity_evaluation.js",
     "vectordb:setup": "node scripts/run_vectordb_setup.js",
     "vectordb:py": "python scripts/run_vectordb_setup.py"
   },

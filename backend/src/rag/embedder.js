@@ -1,6 +1,7 @@
 /**
  * ============================================================================
- * Milestone 3.25, 3.26 & 3.28: Embedding Service & Batch Resilience Facade
+ * Milestone 3.25, 3.26, 3.27, 3.28 & 3.29: Embedding Service, Batch Resilience,
+ * Similarity Metrics & Embedding Quality Evaluation Facade
  * Airline Procedure Intelligence System
  * ============================================================================
  */
@@ -34,6 +35,26 @@ import {
   BatchEmbeddingExhaustedRetriesError
 } from './batchEmbeddingManager.js';
 
+import {
+  computeCosineSimilarity,
+  computeEuclideanDistance,
+  computeDotProduct,
+  rankBySimilarity,
+  inspectVector,
+  validateVector,
+  SIMILARITY_SAFETY_DISCLAIMER,
+  SimilarityError,
+  InvalidVectorError,
+  VectorDimensionMismatchError,
+  ZeroVectorError
+} from './similarityValidator.js';
+
+import {
+  evaluateSimilarityQuality,
+  loadSimilarityEvaluationSet,
+  formatEvaluationReportMarkdown
+} from './similarityQualityEvaluator.js';
+
 export {
   createEmbeddingAdapter,
   BaseEmbeddingAdapter,
@@ -57,7 +78,22 @@ export {
   calculateBackoffWithJitter,
   computeEmbeddingCacheKey,
   EmbeddingAuthenticationError,
-  BatchEmbeddingExhaustedRetriesError
+  BatchEmbeddingExhaustedRetriesError,
+  // Day 16 additions (Milestones 3.27 & 3.29)
+  computeCosineSimilarity,
+  computeEuclideanDistance,
+  computeDotProduct,
+  rankBySimilarity,
+  inspectVector,
+  validateVector,
+  SIMILARITY_SAFETY_DISCLAIMER,
+  SimilarityError,
+  InvalidVectorError,
+  VectorDimensionMismatchError,
+  ZeroVectorError,
+  evaluateSimilarityQuality,
+  loadSimilarityEvaluationSet,
+  formatEvaluationReportMarkdown
 };
 
 let defaultAdapter = null;
@@ -107,5 +143,13 @@ export default {
   generateEmbeddingRecord,
   createEmbeddingAdapter,
   createBatchEmbeddingManager,
-  BatchEmbeddingManager
+  BatchEmbeddingManager,
+  computeCosineSimilarity,
+  computeEuclideanDistance,
+  computeDotProduct,
+  rankBySimilarity,
+  inspectVector,
+  validateVector,
+  evaluateSimilarityQuality,
+  SIMILARITY_SAFETY_DISCLAIMER
 };
