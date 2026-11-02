@@ -1,0 +1,14 @@
+{
+  "status": "SUCCESS",
+  "timestamp": "2026-11-02T08:24:40.072Z",
+  "provider": "gemini",
+  "model": "gemini-embedding-001",
+  "dimensions": 3072,
+  "sampleQuery": "How do pilots initiate an emergency descent?",
+  "similarityResults": {
+    "relatedSimilarity": 0.812127,
+    "unrelatedSimilarity": 0.517964,
+    "separationMargin": 0.2942
+  },
+  "testPassed": true
+}

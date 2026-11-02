@@ -24,7 +24,7 @@ test('chunker splits text into section-aware chunks within the word budget', asy
     assert.ok(chunk.text.trim().length > 0);
     assert.ok(chunk.wordCount <= 80, `chunk exceeded budget: ${chunk.wordCount}`);
     assert.ok(typeof chunk.chunkIndex === 'number');
-    assert.ok(typeof chunk.section === 'string' && chunk.section.length > 0);
+    assert.ok(chunk.metadata?.sectionTitle || chunk.metadata?.headings?.length > 0);
   }
 });
 

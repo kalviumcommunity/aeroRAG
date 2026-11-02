@@ -112,7 +112,7 @@ export const getDocumentContent = async (req, res, next) => {
 
     let content = '';
     try {
-      content = await extractText(doc.filePath, doc.fileType);
+      content = (await extractText(doc.filePath, doc.fileType)).text;
     } catch (err) {
       content = `[Unable to extract text: ${err.message}]`;
     }
@@ -184,12 +184,12 @@ export const compareDocuments = async (req, res, next) => {
     let content1 = '';
     let content2 = '';
     try {
-      content1 = await extractText(doc1.filePath, doc1.fileType);
+      content1 = (await extractText(doc1.filePath, doc1.fileType)).text;
     } catch (e) {
       content1 = `[Error extracting text for ${doc1.documentId}: ${e.message}]`;
     }
     try {
-      content2 = await extractText(doc2.filePath, doc2.fileType);
+      content2 = (await extractText(doc2.filePath, doc2.fileType)).text;
     } catch (e) {
       content2 = `[Error extracting text for ${doc2.documentId}: ${e.message}]`;
     }

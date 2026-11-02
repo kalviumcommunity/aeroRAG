@@ -1,0 +1,317 @@
+{
+  "evaluationDate": "2026-11-02T08:47:44.818Z",
+  "overallStatus": "PASSED",
+  "datasetName": "Airline Operations Synthetic Similarity Evaluation Set",
+  "datasetVersion": "1.0.0",
+  "embeddingModel": "mock-text-embedding-004",
+  "embeddingDimensions": 768,
+  "safetyDisclaimer": "Semantic similarity scores measure lexical/embedding vector proximity only. Similarity alone DOES NOT establish operational validity, regulatory compliance, aircraft effectivity, or flight crew safety approval.",
+  "safetyNotice": "Semantic similarity alone DOES NOT imply flight safety, airworthiness, or operational effectivity.",
+  "metrics": {
+    "queriesEvaluated": 5,
+    "corpusChunksEvaluated": 12,
+    "top1Accuracy": 0.8,
+    "top1Matches": 4,
+    "meanRelatedSimilarity": 0.424293,
+    "meanUnrelatedSimilarity": 0.039119,
+    "separationMargin": 0.385174,
+    "minSeparationMarginRequired": 0.2
+  },
+  "vectorAudit": {
+    "totalVectors": 12,
+    "validVectors": 12,
+    "zeroVectors": 0,
+    "normalizedVectors": 12,
+    "hasNonFinite": false,
+    "dimensionIntegrity": true
+  },
+  "anomalies": [
+    {
+      "type": "LOW_PROCEDURAL_SIMILARITY",
+      "severity": "MEDIUM",
+      "queryId": "query-emergency-descent",
+      "queryText": "What is the initial memory action for emergency descent rapid depressurization?",
+      "chunkId": "chunk-proc-emergency-descent",
+      "similarity": 0.311508,
+      "threshold": 0.35,
+      "description": "Procedural chunk similarity (0.311508) is below minimum benchmark expectation (0.35)."
+    },
+    {
+      "type": "SUPERSEDED_PROCEDURE_RANKED_FIRST",
+      "severity": "SAFETY_WARNING",
+      "queryId": "query-contaminated-runway-trap",
+      "queryText": "Can we take credit for reverse thrust on contaminated runway takeoff distance calculation?",
+      "expectedChunkId": "chunk-proc-runway-current",
+      "rankedChunkId": "chunk-proc-runway-superseded",
+      "similarity": 0.492692,
+      "description": "SAFETY ALERT: Superseded checklist/procedure \"chunk-proc-runway-superseded\" ranked #1 due to strong semantic similarity (0.492692). High similarity does NOT certify current operational validity."
+    }
+  ],
+  "queryEvaluations": [
+    {
+      "queryId": "query-emergency-descent",
+      "queryText": "What is the initial memory action for emergency descent rapid depressurization?",
+      "expectedTargetChunkId": "chunk-proc-emergency-descent",
+      "topRankedChunkId": "chunk-proc-emergency-descent",
+      "isTargetTop1": true,
+      "targetSimilarity": 0.311508,
+      "maxUnrelatedSimilarity": 0.044718,
+      "meanUnrelatedSimilarity": 0.024498,
+      "separationMargin": 0.26679,
+      "top5Results": [
+        {
+          "rank": 1,
+          "id": "chunk-proc-emergency-descent",
+          "similarity": 0.311508,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Emergency Descent"
+        },
+        {
+          "rank": 2,
+          "id": "chunk-unrelated-pet-policy",
+          "similarity": 0.044718,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "In-Cabin Pets"
+        },
+        {
+          "rank": 3,
+          "id": "chunk-proc-engine-failure-v1",
+          "similarity": 0.028985,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Takeoff Engine Failure"
+        },
+        {
+          "rank": 4,
+          "id": "chunk-proc-go-around",
+          "similarity": 0.027846,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Go-Around Execution"
+        },
+        {
+          "rank": 5,
+          "id": "chunk-proc-runway-superseded",
+          "similarity": 0.026816,
+          "status": "SUPERSEDED",
+          "isSuperseded": true,
+          "section": "Contaminated Runway Calculation"
+        }
+      ]
+    },
+    {
+      "queryId": "query-engine-failure-takeoff",
+      "queryText": "What is the procedure for engine failure during takeoff after passing V1 speed?",
+      "expectedTargetChunkId": "chunk-proc-engine-failure-v1",
+      "topRankedChunkId": "chunk-proc-engine-failure-v1",
+      "isTargetTop1": true,
+      "targetSimilarity": 0.348126,
+      "maxUnrelatedSimilarity": 0.048389,
+      "meanUnrelatedSimilarity": 0.028796,
+      "separationMargin": 0.299737,
+      "top5Results": [
+        {
+          "rank": 1,
+          "id": "chunk-proc-engine-failure-v1",
+          "similarity": 0.348126,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Takeoff Engine Failure"
+        },
+        {
+          "rank": 2,
+          "id": "chunk-distractor-ground-runup",
+          "similarity": 0.138878,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Ground Run-up Pad Procedures"
+        },
+        {
+          "rank": 3,
+          "id": "chunk-proc-sterile-cockpit",
+          "similarity": 0.129926,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Sterile Flight Deck"
+        },
+        {
+          "rank": 4,
+          "id": "chunk-proc-runway-current",
+          "similarity": 0.102276,
+          "status": "CURRENT",
+          "isSuperseded": false,
+          "section": "Contaminated Runway Calculation"
+        },
+        {
+          "rank": 5,
+          "id": "chunk-proc-emergency-descent",
+          "similarity": 0.07658,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Emergency Descent"
+        }
+      ]
+    },
+    {
+      "queryId": "query-sterile-cockpit",
+      "queryText": "When does the sterile flight deck rule apply below 10,000 feet?",
+      "expectedTargetChunkId": "chunk-proc-sterile-cockpit",
+      "topRankedChunkId": "chunk-proc-sterile-cockpit",
+      "isTargetTop1": true,
+      "targetSimilarity": 0.426258,
+      "maxUnrelatedSimilarity": 0.131432,
+      "meanUnrelatedSimilarity": 0.081842,
+      "separationMargin": 0.294826,
+      "top5Results": [
+        {
+          "rank": 1,
+          "id": "chunk-proc-sterile-cockpit",
+          "similarity": 0.426258,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Sterile Flight Deck"
+        },
+        {
+          "rank": 2,
+          "id": "chunk-proc-emergency-descent",
+          "similarity": 0.152188,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Emergency Descent"
+        },
+        {
+          "rank": 3,
+          "id": "chunk-proc-engine-failure-v1",
+          "similarity": 0.13172,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Takeoff Engine Failure"
+        },
+        {
+          "rank": 4,
+          "id": "chunk-unrelated-ife-streaming",
+          "similarity": 0.131432,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Wireless Streaming Instructions"
+        },
+        {
+          "rank": 5,
+          "id": "chunk-distractor-oxygen-briefing",
+          "similarity": 0.119026,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Pre-flight Safety Demonstration"
+        }
+      ]
+    },
+    {
+      "queryId": "query-go-around",
+      "queryText": "What are the required pilot flying actions for a go around missed approach?",
+      "expectedTargetChunkId": "chunk-proc-go-around",
+      "topRankedChunkId": "chunk-proc-go-around",
+      "isTargetTop1": true,
+      "targetSimilarity": 0.549743,
+      "maxUnrelatedSimilarity": 0.063071,
+      "meanUnrelatedSimilarity": 0.025458,
+      "separationMargin": 0.486672,
+      "top5Results": [
+        {
+          "rank": 1,
+          "id": "chunk-proc-go-around",
+          "similarity": 0.549743,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Go-Around Execution"
+        },
+        {
+          "rank": 2,
+          "id": "chunk-proc-emergency-descent",
+          "similarity": 0.167174,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Emergency Descent"
+        },
+        {
+          "rank": 3,
+          "id": "chunk-proc-sterile-cockpit",
+          "similarity": 0.113624,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Sterile Flight Deck"
+        },
+        {
+          "rank": 4,
+          "id": "chunk-proc-runway-superseded",
+          "similarity": 0.111749,
+          "status": "SUPERSEDED",
+          "isSuperseded": true,
+          "section": "Contaminated Runway Calculation"
+        },
+        {
+          "rank": 5,
+          "id": "chunk-unrelated-ife-streaming",
+          "similarity": 0.063071,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Wireless Streaming Instructions"
+        }
+      ]
+    },
+    {
+      "queryId": "query-contaminated-runway-trap",
+      "queryText": "Can we take credit for reverse thrust on contaminated runway takeoff distance calculation?",
+      "expectedTargetChunkId": "chunk-proc-runway-current",
+      "topRankedChunkId": "chunk-proc-runway-superseded",
+      "isTargetTop1": false,
+      "targetSimilarity": 0.485828,
+      "maxUnrelatedSimilarity": 0.063416,
+      "meanUnrelatedSimilarity": 0.034998,
+      "separationMargin": 0.422412,
+      "top5Results": [
+        {
+          "rank": 1,
+          "id": "chunk-proc-runway-superseded",
+          "similarity": 0.492692,
+          "status": "SUPERSEDED",
+          "isSuperseded": true,
+          "section": "Contaminated Runway Calculation"
+        },
+        {
+          "rank": 2,
+          "id": "chunk-proc-runway-current",
+          "similarity": 0.485828,
+          "status": "CURRENT",
+          "isSuperseded": false,
+          "section": "Contaminated Runway Calculation"
+        },
+        {
+          "rank": 3,
+          "id": "chunk-proc-go-around",
+          "similarity": 0.155335,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Go-Around Execution"
+        },
+        {
+          "rank": 4,
+          "id": "chunk-proc-sterile-cockpit",
+          "similarity": 0.086409,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Sterile Flight Deck"
+        },
+        {
+          "rank": 5,
+          "id": "chunk-proc-emergency-descent",
+          "similarity": 0.073036,
+          "status": "APPROVED",
+          "isSuperseded": false,
+          "section": "Emergency Descent"
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,10 @@
 import { extractText } from '../utils/textExtractor.js';
 import { chunkText } from './chunker.js';
-import { generateEmbedding } from './embedder.js';
+import {
+  getDefaultBatchManager,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager
+} from './embedder.js';
 import { upsertChunks, deleteDocumentChunks } from './vectorStore.js';
 import Document from '../models/Document.js';
 import logger from '../utils/logger.js';
@@ -13,46 +17,53 @@ export const ingestDocument = async (documentId) => {
 
   doc.processingStatus = 'PROCESSING';
   doc.processingError = '';
-  await doc.save();
 
   try {
+    await doc.save();
+
     // 1. Clear existing chunks from vector store
     await deleteDocumentChunks(documentId);
 
     // 2. Extract plain text across supported formats (PDF, TXT, DOCX, HTML, MD)
-    const { text, pageCount } = await extractText(doc.filePath, doc.fileType);
+    const extracted = await extractText(doc.filePath, doc.fileType);
+    const { text, pageCount } = extracted;
     if (pageCount) {
       doc.pageCount = pageCount;
     }
 
-    // 3. Chunk text into semantically coherent passages with section tracking
-    const chunks = chunkText(text, 250, 35);
+    // 3. Preserve procedural structure while enforcing the configured token budget
+    const chunks = chunkText(text, {
+      maxChunkSize: 500,
+      overlap: 50,
+      unit: 'tokens'
+    });
     if (chunks.length === 0) {
       throw new Error(`No text content could be extracted from document ${documentId}`);
     }
 
-    // 4. Generate embeddings and prepare vector records
-    const ids = [];
-    const embeddings = [];
-    const metadatas = [];
     const chunkTexts = [];
-
     const totalPages = doc.pageCount || 1;
+    for (let i = 0; i < chunks.length; i++) {
+      chunkTexts.push(chunk.text);
+    }
 
+    // 4. Batch embedding applies rate limits, retries, and duplicate caching.
+    const embeddingResult = await getDefaultBatchManager().embedTexts(chunkTexts);
+    if (embeddingResult.summary.successCount !== chunks.length) {
+      throw new Error(`Embedding failed for one or more chunks in document ${documentId}`);
+    }
+
+    const embeddings = embeddingResult.embeddings.map((embedding) => embedding.vector);
+    const ids = [];
+    const metadatas = [];
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      const embedding = await generateEmbedding(chunk.text);
-
-      // Estimate page number for citations
-      const estimatedPage = Math.min(
-        totalPages,
-        Math.max(1, Math.ceil(((i + 1) / chunks.length) * totalPages))
-      );
+      const estimatedPage = Math.min(totalPages, Math.max(1, Math.ceil(((i + 1) / chunks.length) * totalPages)));
+      const sectionTitle = chunk.metadata?.sectionTitle
+        || (chunk.metadata?.headings || []).slice(-1)[0]
+        || 'General Procedure';
 
       ids.push(`${doc.documentId}_chunk_${chunk.chunkIndex}`);
-      embeddings.push(embedding);
-      chunkTexts.push(chunk.text);
-
       metadatas.push({
         documentId: doc.documentId,
         source: doc.documentId,
@@ -66,7 +77,7 @@ export const ingestDocument = async (documentId) => {
         supersedes: Array.isArray(doc.supersedes) ? doc.supersedes.join(',') : (doc.supersedes || ''),
         supersededBy: doc.supersededBy || '',
         chunkIndex: chunk.chunkIndex,
-        section: chunk.section || 'General Procedure',
+        section: sectionTitle,
         page: estimatedPage,
         text: chunk.text.substring(0, 500)
       });
@@ -90,4 +101,37 @@ export const ingestDocument = async (documentId) => {
     logger.error(`Document ingestion failed for ${documentId}: ${error.message}`);
     throw error;
   }
+};
+
+import {
+  IngestionValidator,
+  validateCorpusIngestion,
+  INGESTION_STATUS,
+  DUPLICATE_STRATEGY,
+  FAILURE_STAGES,
+  computeContentHash,
+  countExtractedSections
+} from './ingestionValidator.js';
+
+export {
+  IngestionValidator,
+  validateCorpusIngestion,
+  INGESTION_STATUS,
+  DUPLICATE_STRATEGY,
+  FAILURE_STAGES,
+  computeContentHash,
+  countExtractedSections,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager
+};
+
+/**
+ * Ingests a corpus of documents with full validation and structured reporting.
+ *
+ * @param {Array<string|Object>} corpus - Array of file paths or document objects.
+ * @param {Object} [options] - Ingestion configuration options.
+ * @returns {Promise<Object>} Ingestion validation report.
+ */
+export const ingestCorpus = async (corpus, options = {}) => {
+  return await validateCorpusIngestion(corpus, options);
 };

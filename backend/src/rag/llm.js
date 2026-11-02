@@ -3,51 +3,68 @@ import config from '../config/env.js';
 import logger from '../utils/logger.js';
 import {
   STRUCTURED_SYSTEM_PROMPT,
-  processLlmOutput
+  STRUCTURED_RAG_SCHEMA,
+  APPLICABILITY_STATUSES,
+  UNCERTAINTY_LEVELS,
+  REFUSAL_REASONS,
+  DOCUMENT_STATUSES,
+  processLlmOutput,
+  parseStructuredOutput,
+  validateStructuredOutput
 } from './structuredOutput.js';
+import {
+  createLLMClient,
+  getLLMClient,
+  LLMClientError,
+  MissingConfigurationError,
+  LLMTimeoutError,
+  RateLimitError,
+  InvalidResponseError,
+  ProviderError,
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES
+} from './llmClient.js';
+import {
+  AirlineProcedurePromptTemplate,
+  defaultAirlinePromptTemplate,
+  AIRLINE_SYSTEM_INSTRUCTIONS
+} from './promptTemplates.js';
 
 let genAI;
-if (config.GOOGLE_API_KEY && !config.DEMO_MODE) {
-  genAI = new GoogleGenerativeAI(config.GOOGLE_API_KEY);
+const activeApiKey = config.GOOGLE_API_KEY || config.GEMINI_API_KEY;
+if (activeApiKey && !config.DEMO_MODE) {
+  genAI = new GoogleGenerativeAI(activeApiKey);
 }
 
-const SYSTEM_PROMPT = `
-You are AeroRAG, an AI-powered airline procedure verification assistant for flight operations and ground staff.
+export const SYSTEM_PROMPT = AIRLINE_SYSTEM_INSTRUCTIONS;
 
-Aviation Safety Directives:
-1. Answer ONLY using the provided retrieved airline documents.
-2. Never invent procedures, regulations, altitudes, airspeeds, fuel reserves, or dates.
-3. If the retrieved documents do not contain enough information, clearly state:
-   "I could not find sufficient information in the available airline documents."
-4. DOCUMENT VERSION & CONFLICT PROTOCOL:
-   - Prefer the latest valid document according to status, effective date, and supersession metadata.
-   - If an older document has been superseded, EXPLICITLY state that it is superseded and must NOT be used.
-   - Clearly cite the authoritative document (Document ID, Version, Section, and Page if available).
-   - If an expired or draft document is present, highlight the validity risk clearly.
-
-Format your response clearly:
-1. Direct Procedure Answer
-2. Authoritative Source Citation (Doc ID, Version, Section, Page)
-3. Supersession / Conflict Notes (if applicable)
-`;
-
-export const GROUNDED_CONFIG = {
-  temperature: 0.1,
-  maxOutputTokens: 600,
-  topP: 0.8,
-  stopSequences: []
-};
+export const GROUNDED_CONFIG = { ...DEFAULT_GROUNDED_PARAMETERS };
 
 function generateMockAnswer(query, contextChunks, options = {}, conflictAnalysis = null) {
   if (!contextChunks || contextChunks.length === 0) {
     if (options.structured) {
       return JSON.stringify({
         answer: "I could not find sufficient information in the available airline documents.",
-        source: {
-          documentId: "NONE",
-          title: "No Matching Documentation",
-          status: "UNKNOWN"
+        evidenceReferences: [],
+        applicabilityStatus: "NOT_APPLICABLE",
+        uncertainty: {
+          level: "COMPLETE",
+          score: 1.0,
+          reason: "No matching documentation found"
         },
+        refusalReason: "INSUFFICIENT_EVIDENCE",
+        // legacy compatibility
+        source: null,
         confidence: 0.0,
         supersededNotes: null,
         isGrounded: false
@@ -55,7 +72,6 @@ function generateMockAnswer(query, contextChunks, options = {}, conflictAnalysis
     }
     return "I could not find sufficient information in the available airline documents.";
   }
-
   // Find authoritative chunk: prefer CURRENT over others
   const currentChunk = contextChunks.find(c => {
     const s = (c.metadata?.status || '').toUpperCase();
@@ -85,6 +101,26 @@ function generateMockAnswer(query, contextChunks, options = {}, conflictAnalysis
   if (options.structured) {
     return JSON.stringify({
       answer: answerText,
+      evidenceReferences: [
+        {
+          documentId,
+          title,
+          section: primaryDoc.section || primaryDoc.sectionTitle || 'General Procedure',
+          page: Number(primaryDoc.page) || 1,
+          ...(primaryDoc.effectiveDate || primaryDoc.effective_date
+            ? { effectiveDate: primaryDoc.effectiveDate || primaryDoc.effective_date }
+            : {}),
+          status: (primaryDoc.status || 'UNKNOWN').toUpperCase(),
+          quote: passage ? passage.substring(0, 150) : null
+        }
+      ],
+      applicabilityStatus: primaryDoc.status === 'SUPERSEDED' ? 'SUPERSEDED' : 'APPLICABLE',
+      uncertainty: {
+        level: "LOW",
+        score: 0.05,
+        reason: "Direct statement in current approved SOP"
+      },
+      refusalReason: null,
       source: {
         documentId,
         title,
@@ -120,8 +156,13 @@ function generateMockAnswer(query, contextChunks, options = {}, conflictAnalysis
 }
 
 export const generateAnswer = async (query, contextChunks, customOptions = {}) => {
+  // Validate model parameters
+  const paramValidation = validateModelParameters(customOptions, 'gemini', {
+    strict: Boolean(customOptions.strict)
+  });
   const options = {
     ...GROUNDED_CONFIG,
+    ...paramValidation.parameters,
     ...customOptions
   };
 
@@ -135,20 +176,6 @@ export const generateAnswer = async (query, contextChunks, customOptions = {}) =
     return mockRaw;
   }
 
-  const contextString = contextChunks.map((c, i) => `
---- Source ${i + 1} ---
-Document ID: ${c.metadata.documentId}
-Title: ${c.metadata.documentTitle || c.metadata.title}
-Status: ${c.metadata.status}
-Version: ${c.metadata.version || 'N/A'}
-Section: ${c.metadata.section || 'General'}
-Page: ${c.metadata.page || 'N/A'}
-Effective Date: ${c.metadata.effectiveDate || 'N/A'}
-Supersedes: ${c.metadata.supersedes || 'None'}
-Passage Content:
-${c.document}
-`).join('\n');
-
   let conflictPrompt = '';
   if (conflictAnalysis && conflictAnalysis.hasConflict) {
     conflictPrompt = `
@@ -161,30 +188,28 @@ CRITICAL: You MUST prioritize the authoritative document procedure. Warn the use
 `;
   }
 
-  const selectedPrompt = options.structured ? STRUCTURED_SYSTEM_PROMPT : SYSTEM_PROMPT;
-
-  const prompt = `
-${selectedPrompt}
-
-${conflictPrompt}
-
-User Query: ${query}
-
-Retrieved Documents:
-${contextString}
-`;
+  // Use maintainable prompt template
+  const templateBuilder = options.promptTemplate || defaultAirlinePromptTemplate;
+  const { fullPrompt } = templateBuilder.buildPrompt({
+    query,
+    chunks: contextChunks,
+    structured: Boolean(options.structured)
+  });
+  const prompt = conflictPrompt ? `${fullPrompt}\n\n${conflictPrompt}` : fullPrompt;
 
   try {
     const generationConfig = {
       temperature: options.temperature,
       maxOutputTokens: options.maxOutputTokens,
       topP: options.topP,
+      ...(options.topK ? { topK: options.topK } : {}),
       ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {}),
       ...(options.structured ? { responseMimeType: 'application/json' } : {})
     };
 
+    const modelName = options.model || config.LLM_MODEL || 'gemini-3.5-flash-lite';
     const model = genAI.getGenerativeModel({
-      model: config.LLM_MODEL,
+      model: modelName,
       generationConfig
     });
 
@@ -204,4 +229,38 @@ ${contextString}
 
 export const generateStructuredAnswer = async (query, contextChunks, customOptions = {}) => {
   return generateAnswer(query, contextChunks, { ...customOptions, structured: true });
+};
+
+export {
+  createLLMClient,
+  getLLMClient,
+  LLMClientError,
+  MissingConfigurationError,
+  LLMTimeoutError,
+  RateLimitError,
+  InvalidResponseError,
+  ProviderError,
+  AirlineProcedurePromptTemplate,
+  defaultAirlinePromptTemplate,
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES,
+  STRUCTURED_SYSTEM_PROMPT,
+  STRUCTURED_RAG_SCHEMA,
+  APPLICABILITY_STATUSES,
+  UNCERTAINTY_LEVELS,
+  REFUSAL_REASONS,
+  DOCUMENT_STATUSES,
+  processLlmOutput,
+  parseStructuredOutput,
+  validateStructuredOutput
 };
