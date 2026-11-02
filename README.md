@@ -119,6 +119,38 @@ node --test backend/tests/documentLoader.test.js
 
 ---
 
+## 3.20 Text Extraction & Cleaning Pipeline (Day 10)
+
+This milestone (`feat/day-10-text-cleaning`) implements a deterministic text-cleaning pipeline that normalizes whitespace and Unicode encoding, removes repetitive boilerplate safely, preserves headings, numbered steps, warnings, and tables, and computes extraction quality metrics.
+
+### Key Highlights
+- **Deterministic Encoding & Whitespace Normalization:**
+  - Normalizes Unicode NFC composition, converts smart quotes (`“”`, `‘’`) and non-standard dashes (`—`, `–`, `−`) to ASCII equivalents.
+  - Purges null bytes, Byte Order Marks (`\uFEFF`), zero-width spaces (`\u200B`), and converts non-breaking spaces (`\u00A0`) to standard spaces.
+  - Normalizes CRLF/CR to Unix LF (`\n`), collapses redundant prose spaces, caps excessive empty lines to 2, and preserves table row column alignment.
+- **Structural Integrity Preservation:**
+  - *Procedure Numbering:* Accurately detects and preserves numbered and lettered checklist steps (`1.`, `2.`, `1.1`, `Step 1:`, `a.`, `(1)`, `1. **Bold**`).
+  - *Headings & Boundaries:* Preserves Markdown headings (`#`, `##`, `###`) and uppercase aviation titles (`QUICK REFERENCE HANDBOOK`).
+  - *Safety Warnings:* Preserves all callout blocks (`WARNING:`, `CAUTION:`, `NOTE:`, `DANGER:`, `MANDATORY:`) and boxed notices intact.
+  - *Tables:* Preserves Markdown pipe tables and fixed-width columnar rows without mangling internal spacing.
+- **Safety Invariant (Boilerplate Stripping Defense):**
+  - **Never deletes text solely because it resembles a header or footer if doing so could remove an operational procedure or safety warning.**
+  - Evaluates candidate lines against safety keywords, procedural verbs (`SET`, `VERIFY`, `CLOSE`), numbered steps, and flight parameter tokens (`ft`, `KIAS`, `FL`, `Vmo`).
+  - Preserves protected candidate lines and logs informative `HEADER_PRESERVED_SAFETY` telemetry.
+- **Extraction Quality Metrics & Telemetry:**
+  - Tracks character, word, line, paragraph, heading, step, warning, and table counts.
+  - Calculates reduction ratio and quality score (0 - 100) reflecting document readability, structural completeness, and clean layout.
+- **Pluggable Architecture:** Reusable `TextCleaningPipeline` class with middleware registration (`.use(stepFn)`) integrated seamlessly with `documentLoader.js` and `textExtractor.js`.
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/TEXT_CLEANING_GUIDE.md`](docs/TEXT_CLEANING_GUIDE.md).
+
+### Running Text Cleaning Tests
+
+```bash
+node --test backend/tests/textCleaner.test.js
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.

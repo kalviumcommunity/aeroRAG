@@ -3,6 +3,19 @@ import path from 'path';
 import crypto from 'crypto';
 import mammoth from 'mammoth';
 import { createRequire } from 'module';
+import { cleanText } from './textCleaner.js';
+
+export {
+  cleanText,
+  normalizeEncoding,
+  normalizeWhitespace,
+  removeBoilerplate,
+  extractQualityMetrics,
+  detectStructure,
+  isSafetyCritical,
+  isProceduralStep,
+  TextCleaningPipeline
+} from './textCleaner.js';
 
 const require = createRequire(import.meta.url);
 const PDFJS = require('pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js');
@@ -535,17 +548,30 @@ export async function loadDocument(filePath, options = {}) {
     // 8. Sanitize extracted text (prevent script execution from document payloads)
     const sanitizedText = sanitizeExtractedText(extraction.text);
 
-    // 9. Generate deterministic ID
-    const docId = options.documentId || generateDocumentId(sanitizedText || filename, filename);
+    // 9. Clean text via deterministic cleaning pipeline (Milestone 3.20)
+    let cleanedText = sanitizedText;
+    let cleaningResult = null;
+    if (!extraction.isScanned && sanitizedText) {
+      cleaningResult = cleanText(sanitizedText, options);
+      cleanedText = cleaningResult.cleanedText;
+    }
+
+    // 10. Generate deterministic ID
+    const docId = options.documentId || generateDocumentId(cleanedText || filename, filename);
+
+    const warnings = [...(extraction.warnings || [])];
+    if (cleaningResult && cleaningResult.warnings && cleaningResult.warnings.length > 0) {
+      warnings.push(...cleaningResult.warnings.map(w => w.message));
+    }
 
     return {
       id: docId,
       filename,
       contentType: extraction.mimeType,
       format: extraction.format,
-      text: sanitizedText,
-      charCount: extraction.isScanned ? 0 : sanitizedText.length,
-      wordCount: extraction.isScanned ? 0 : (sanitizedText ? sanitizedText.split(/\s+/).filter(Boolean).length : 0),
+      text: cleanedText,
+      charCount: extraction.isScanned ? 0 : cleanedText.length,
+      wordCount: extraction.isScanned ? 0 : (cleanedText ? cleanedText.split(/\s+/).filter(Boolean).length : 0),
       pageCount: extraction.pageCount || 1,
       isScanned: extraction.isScanned || false,
       requiresOcr: extraction.requiresOcr || false,
@@ -556,8 +582,11 @@ export async function loadDocument(filePath, options = {}) {
         extractionTimestamp: new Date().toISOString(),
         extractedWith: loader.constructor.name,
         ocrReason: extraction.ocrReason || null,
-        headings: extraction.headings || undefined,
-        warnings: extraction.warnings || undefined
+        headings: (cleaningResult && cleaningResult.structure.headings.length > 0)
+          ? cleaningResult.structure.headings
+          : (extraction.headings || undefined),
+        warnings: warnings.length > 0 ? warnings : undefined,
+        qualityMetrics: cleaningResult ? cleaningResult.qualityMetrics : undefined
       }
     };
   } catch (err) {
