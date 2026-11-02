@@ -85,6 +85,40 @@ node --test backend/tests/structuredOutput.test.js
 
 ---
 
+## 3.19 Document Loading & Multi-Format Intake (Day 9)
+
+This milestone (`feat/day-09-document-loaders`) implements modular intake loaders for heterogeneous airline procedure formats (**PDF**, **DOCX**, **Plain Text**, and **Markdown**, with additional **HTML** support), enforcing untrusted input protections, host path sanitization, and automatic scanned PDF detection for OCR handoff.
+
+### Key Highlights
+- **Modular Loaders for Heterogeneous Formats:**
+  - `PdfLoader`: Extracts multi-page text streams and page counts via embedded PDFJS engine.
+  - `DocxLoader`: Extracts OpenXML text runs and paragraphs via Mammoth without macro execution.
+  - `TextLoader`: Reads plain text files, normalizes newlines, and strips UTF-8 BOM headers.
+  - `MarkdownLoader`: Extracts procedural text while capturing hierarchical section headings (`#`, `##`, `###`).
+  - `HtmlLoader`: Strips `<script>`, `<style>`, and markup tags, outputting clean readable text.
+- **Untrusted Input Security Model:**
+  - *Server Path Redaction:* Host filesystem paths (e.g. `C:\Users\...` or `/home/...`) are strictly redacted in document outputs and error messages; only safe virtual paths (`documents/<filename>`) are exposed.
+  - *Execution Prevention:* Dangerous script blocks (`<script>`, `<iframe>`, `<object>`, `<embed>`), inline event handlers (`onload=`, `onerror=`), and `javascript:` pseudoprotocols are completely stripped.
+  - *Directory Traversal Defense:* Filenames are sanitized against directory traversal attacks (`../`, null bytes, control characters).
+- **Scanned PDF Identification (OCR Required):**
+  - Detects non-text or scanned image PDFs where extractable text is absent or below character threshold (`charCount < 35`).
+  - Flags `isScanned: true`, `requiresOcr: true`, and assigns `status: 'REQUIRES_OCR'` with diagnostic reasoning rather than silently treating the file as complete.
+- **Validation, Size Limits & Error Resilience:**
+  - Enforces configurable maximum file size (default: 25 MB) with `DocumentSizeExceededError`.
+  - Rejects empty documents (0 bytes or whitespace only) with `EmptyDocumentError`.
+  - Dispatches `UnsupportedFormatError` detailing attempted format and complete list of supported formats.
+  - Recovers from corrupted archives and damaged PDFs with `CorruptedDocumentError`.
+  - `loadCorpus(dirPath)` scans mixed-format directories, segregating loaded, OCR-required, and skipped files without crashing the batch.
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/DOCUMENT_LOADING_GUIDE.md`](docs/DOCUMENT_LOADING_GUIDE.md).
+
+### Running Document Loader Tests
+
+```bash
+node --test backend/tests/documentLoader.test.js
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.
