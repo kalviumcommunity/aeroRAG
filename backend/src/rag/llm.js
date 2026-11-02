@@ -13,7 +13,13 @@ import {
   LLMTimeoutError,
   RateLimitError,
   InvalidResponseError,
-  ProviderError
+  ProviderError,
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError
 } from './llmClient.js';
 import {
   AirlineProcedurePromptTemplate,
@@ -160,5 +166,11 @@ export {
   InvalidResponseError,
   ProviderError,
   AirlineProcedurePromptTemplate,
-  defaultAirlinePromptTemplate
+  defaultAirlinePromptTemplate,
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError
 };

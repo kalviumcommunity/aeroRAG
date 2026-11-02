@@ -1,6 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import config from '../config/env.js';
 import logger from '../utils/logger.js';
+import {
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError
+} from './tokenContextManager.js';
 
 // ============================================================================
 // Error Hierarchy
@@ -103,7 +111,7 @@ export class BaseLLMAdapter {
    * Send a message/prompt to the model and return a normalized completion response.
    * @param {string|Array<{role: string, content: string}>} promptOrMessages 
    * @param {object} [options]
-   * @returns {Promise<{text: string, model: string, provider: string, usage: object, finishReason: string, latencyMs: number, metadata: object, raw: any}>}
+   * @returns {Promise<{text: string, model: string, provider: string, usage: object, cost: object, finishReason: string, latencyMs: number, metadata: object, raw: any}>}
    */
   async sendMessage(promptOrMessages, options = {}) {
     throw new Error('sendMessage() must be implemented by adapter subclasses');
@@ -279,11 +287,15 @@ export class GeminiAdapter extends BaseLLMAdapter {
         totalTokens: usageMetadata.totalTokenCount || Math.ceil((promptText.length + responseText.length) / 4)
       };
 
+      // Milestone 3.14: Cost calculation when pricing is configured
+      const cost = calculateCost(usage, modelName);
+
       return {
         text: responseText,
         model: modelName,
         provider: 'gemini',
         usage,
+        cost,
         finishReason,
         latencyMs,
         metadata: {
@@ -464,16 +476,21 @@ export class MockLLMAdapter extends BaseLLMAdapter {
 
     const promptTokens = Math.ceil(promptText.length / 4);
     const completionTokens = Math.ceil(text.length / 4);
+    const usage = {
+      promptTokens,
+      completionTokens,
+      totalTokens: promptTokens + completionTokens
+    };
+
+    const modelName = callOptions.model || this.model;
+    const cost = calculateCost(usage, modelName);
 
     return {
       text,
-      model: callOptions.model || this.model,
+      model: modelName,
       provider: 'mock',
-      usage: {
-        promptTokens,
-        completionTokens,
-        totalTokens: promptTokens + completionTokens
-      },
+      usage,
+      cost,
       finishReason: 'STOP',
       latencyMs: this.simulatedLatencyMs,
       metadata: {
@@ -524,6 +541,15 @@ export function getLLMClient(options = {}) {
   return defaultClient;
 }
 
+export {
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError
+};
+
 export default {
   BaseLLMAdapter,
   GeminiAdapter,
@@ -535,5 +561,11 @@ export default {
   LLMTimeoutError,
   RateLimitError,
   InvalidResponseError,
-  ProviderError
+  ProviderError,
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError
 };
