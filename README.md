@@ -151,6 +151,39 @@ node --test backend/tests/textCleaner.test.js
 
 ---
 
+## 3.21 Document Chunking Strategies (Day 11)
+
+This milestone (`feat/day-11-document-chunking`) implements configurable, operational document chunking strategies including heading-aware and procedure-aware semantic chunking, enforcing strict safety invariants against severing procedural checklists or stranding safety warnings.
+
+### Key Highlights
+- **Configurable Operational Chunking Strategies:**
+  - `FIXED_SIZE`: Token- and character-bounded sliding window with configurable overlap on word boundaries (baseline benchmark).
+  - `HEADING_AWARE`: Hierarchical section-based chunking that tracks ancestor heading stacks and prepends contextual breadcrumbs (`[Parent > Child]`).
+  - `PROCEDURE_AWARE` *(Chosen Default)*: Aviation-optimized chunking treating checklists as atomic units, binding warnings to their governed procedures, and partitioning oversized procedures strictly between discrete steps.
+- **Safety Invariant (Procedure & Checklist Integrity):**
+  - **Avoids splitting a numbered procedure in ways that destroy essential context.** Checklists (e.g. steps 1–6) are kept in a single chunk whenever feasible.
+  - Guarantees that preceding `WARNING` and `CAUTION` blocks remain attached to the procedural steps they govern.
+- **Comparative Strategy Benchmark:**
+  - Benchmarked across 3 representative synthetic documents (QRH emergency descent checklist, ETOPS-180 diversion policy, FCOM flap asymmetry).
+  - Demonstrates that `procedure_aware` produces 0 severed procedures, achieves the lowest chunk size variance (std dev 31.8 tokens), and guarantees 100% warning-to-step association.
+  - Detailed benchmark artifacts in [`docs/chunking_strategy_comparison.md`](docs/chunking_strategy_comparison.md) and [`docs/chunking_strategy_comparison.json`](docs/chunking_strategy_comparison.json).
+- **Pluggable Chunking Interface:** Reusable `DocumentChunker` class and backward-compatible `chunkText(text, optionsOrMaxTokens, overlapTokens)` function.
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/CHUNKING_STRATEGY_GUIDE.md`](docs/CHUNKING_STRATEGY_GUIDE.md).
+
+### Running Document Chunking Tests & Benchmarks
+
+**Run Unit Tests:**
+```bash
+node --test backend/tests/chunker.test.js
+```
+
+**Run Strategy Benchmark Runner:**
+```bash
+node backend/scripts/compare_chunking_strategies.js
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.
