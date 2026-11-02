@@ -344,6 +344,54 @@ npm --prefix backend test
 
 ---
 
+## 3.27 & 3.29 Similarity Metrics, Embedding Quality & Deterministic Ranking (Day 16)
+
+This milestone (`feat/day-16-similarity-quality-tests`) implements cosine similarity with strict input validation, vector quality audits, deterministic candidate ranking, a synthetic procedural evaluation benchmark, and safety anomaly reporting.
+
+### Key Highlights
+- **Mathematical Cosine Similarity & Vector Quality Auditing:**
+  - Evaluates dot product, Euclidean distance, and cosine similarity with numerical precision clamping in $[-1.0, 1.0]$.
+  - Rigorous input validation: rejects empty vectors, non-arrays, and non-finite values (`NaN`, `Infinity`, `-Infinity`).
+  - Zero-magnitude vector handling: returns `0.0` similarity safely by default or throws `ZeroVectorError` when disallowed.
+  - Dimension checking: throws `VectorDimensionMismatchError` when vector lengths differ or don't match collection requirements.
+- **Safety Invariant — Model & Vector Space Compatibility:**
+  - **Never assume two embedding models share a compatible vector space.**
+  - `computeCosineSimilarity` strictly validates vector metadata and throws `IncompatibleVectorSpaceError` on model or dimensional mismatch to prevent vector space contamination.
+- **Deterministic Candidate Ranking:**
+  - `rankBySimilarity`: Ranks candidates by similarity descending with deterministic tie-breaking (candidate ID / chunk index) to eliminate non-deterministic ordering across runs and JS engines.
+  - Slices `topK` and applies configurable `minSimilarityThreshold`.
+  - **Safety Invariant Enforcement:** Every ranking output attaches `safetyDisclaimer`: *"Semantic similarity scores measure lexical/embedding vector proximity only. Similarity alone DOES NOT establish operational validity, regulatory compliance, aircraft effectivity, or flight crew safety approval."*
+- **Synthetic Procedural Evaluation Benchmark:**
+  - Ground-truth evaluation dataset ([`backend/evaluation/similarity_evaluation_set.json`](backend/evaluation/similarity_evaluation_set.json)) evaluating flight crew procedures (Emergency Descent, Engine Failure, Sterile Cockpit, Go-Around, Contaminated Runway) against unrelated topics (IFE streaming, pet travel, lounge access, luggage compensation) and borderline distractors.
+  - Verified benchmark results:
+    - **Top-1 Accuracy:** 80.0%
+    - **Mean Related Similarity:** 0.424293
+    - **Mean Unrelated Similarity:** 0.039119
+    - **Separation Margin:** +0.385174 (exceeds $\ge +0.200$ threshold)
+- **Anomaly Detection & Investigation Reporting:**
+  - Automatically reports `UNEXPECTED_RANKING_INVERSION`, `LOW_PROCEDURAL_SIMILARITY`, and `HIGH_DISTRACTOR_SIMILARITY`.
+  - Highlights `SUPERSEDED_PROCEDURE_RANKED_FIRST` safety warning: when a superseded checklist chunk achieves high semantic proximity, flags an alert that similarity does not establish operational validity.
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/SIMILARITY_QUALITY_GUIDE.md`](docs/SIMILARITY_QUALITY_GUIDE.md).
+
+### Running Similarity & Ranking Tests
+
+**Run Similarity & Quality Unit Tests (28 Passing Tests):**
+```bash
+node --test backend/tests/similarityQuality.test.js
+```
+
+**Run Benchmark Evaluation Runner:**
+```bash
+npm --prefix backend run evaluate:similarity
+```
+
+**Run All Backend Tests (297 Passing Tests):**
+```bash
+npm --prefix backend test
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.
