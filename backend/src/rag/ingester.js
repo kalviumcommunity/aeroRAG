@@ -66,3 +66,34 @@ export const ingestDocument = async (documentId) => {
   logger.info(`Successfully ingested document ${documentId}, chunks: ${chunks.length}`);
   return chunks.length;
 };
+
+import {
+  IngestionValidator,
+  validateCorpusIngestion,
+  INGESTION_STATUS,
+  DUPLICATE_STRATEGY,
+  FAILURE_STAGES,
+  computeContentHash,
+  countExtractedSections
+} from './ingestionValidator.js';
+
+export {
+  IngestionValidator,
+  validateCorpusIngestion,
+  INGESTION_STATUS,
+  DUPLICATE_STRATEGY,
+  FAILURE_STAGES,
+  computeContentHash,
+  countExtractedSections
+};
+
+/**
+ * Ingests a corpus of documents with full validation and structured reporting.
+ *
+ * @param {Array<string|Object>} corpus - Array of file paths or document objects.
+ * @param {Object} [options] - Ingestion configuration options.
+ * @returns {Promise<Object>} Ingestion validation report.
+ */
+export const ingestCorpus = async (corpus, options = {}) => {
+  return await validateCorpusIngestion(corpus, options);
+};
