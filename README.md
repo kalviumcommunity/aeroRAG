@@ -255,6 +255,50 @@ npm --prefix backend test
 
 ---
 
+## 3.25 & 3.26 Embedding Service & Vector Space Validation (Day 14)
+
+This milestone (`feat/day-14-embedding-service`) implements a configurable embedding adapter layer converting operational queries and procedure chunks into dense normalized vectors, validating dimensional integrity, and strictly enforcing vector space compatibility.
+
+### Key Highlights
+- **Configurable Embedding Adapter Layer:**
+  - `BaseEmbeddingAdapter`: Standardized base class defining `embedQuery`, `embedBatch`, and `embedChunks`.
+  - `MockEmbeddingAdapter`: High-fidelity offline adapter generating deterministic pseudo-semantic embeddings via coordinate term hashing, enabling 100% test coverage without network or API keys.
+  - `GeminiEmbeddingAdapter`: Connects to Google Gemini live embeddings (`gemini-embedding-001` / `text-embedding-004`) with configurable timeout abort controls and quota rate limit classification (`429`).
+  - `createEmbeddingAdapter(options)`: Factory abstraction selecting mock vs cloud provider based on environment and options.
+- **Safety Invariant (Vector Space Compatibility):**
+  - **Never assume two embedding models share a compatible vector space.**
+  - `cosineSimilarity(vecA, vecB, metaA, metaB)` strictly checks that both vectors originate from the same embedding model and have identical dimensions. Throws `IncompatibleVectorSpaceError` on mismatched models or dimensions to prevent corrupted similarity retrieval.
+- **Strict Vector Validation & L2 Normalization:**
+  - `validateEmbeddingVector(vector, expectedDimensions)` guarantees vector length matches expected dimensions and checks that all coordinates are finite numbers (rejects `NaN`, `Infinity`, `-Infinity`).
+  - Automatically normalizes vectors to unit length (L2 norm = 1.0) for standard cosine similarity calculation.
+- **Batching Support & Model Identity Metadata Lineage:**
+  - Automatic batching (`embedBatch`) splits large chunk arrays into chunks of `batchSize` (default: 32).
+  - Binds model identity (`embeddingModel`, `embeddingDimensions`, `embeddingProvider`, `embeddingGeneratedAt`) to chunk indexing metadata.
+- **Synthetic Semantic Similarity Demonstration:**
+  - Demonstrates that semantically related procedural queries produce high similarity (e.g. 0.8121 on emergency descent procedures) while cross-domain unrelated texts yield low similarity (e.g. 0.5180 on baggage allowance rules), providing a 0.2942 separation delta.
+- **Live API Smoke Test Runner:**
+  - `backend/scripts/smoke_test_embedding.js` executes live verification calls against Google Generative AI when credentials are configured and reports honestly to [`docs/embedding_smoke_test_results.json`](docs/embedding_smoke_test_results.json).
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/EMBEDDING_SERVICE_GUIDE.md`](docs/EMBEDDING_SERVICE_GUIDE.md).
+
+### Running Embedding Tests & Smoke Test
+
+**Run Embedding Unit Tests (24 Passing Tests):**
+```bash
+node --test backend/tests/embeddingAdapter.test.js
+```
+
+**Run Real Provider Smoke Test:**
+```bash
+node backend/scripts/smoke_test_embedding.js
+```
+
+**Run All Backend Tests (242 Passing Tests):**
+```bash
+npm --prefix backend test
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.

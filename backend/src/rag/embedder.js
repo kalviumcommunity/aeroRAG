@@ -1,38 +1,84 @@
-import config from '../config/env.js';
-import logger from '../utils/logger.js';
+/**
+ * ============================================================================
+ * Milestone 3.25 & 3.26: Embedding Service Facade
+ * Airline Procedure Intelligence System
+ * ============================================================================
+ */
 
-let GoogleGenerativeAI = null;
-try {
-  const mod = await import('@google/generative-ai');
-  GoogleGenerativeAI = mod.GoogleGenerativeAI;
-} catch (e) {
-  // Not installed or offline
+import {
+  createEmbeddingAdapter,
+  BaseEmbeddingAdapter,
+  MockEmbeddingAdapter,
+  GeminiEmbeddingAdapter,
+  validateEmbeddingVector,
+  normalizeVector,
+  isCompatibleVectorSpace,
+  cosineSimilarity,
+  EmbeddingError,
+  MissingEmbeddingConfigurationError,
+  EmbeddingTimeoutError,
+  EmbeddingRateLimitError,
+  EmbeddingDimensionMismatchError,
+  EmbeddingInvalidResponseError,
+  IncompatibleVectorSpaceError,
+  EmbeddingProviderError
+} from './embeddingAdapter.js';
+
+export {
+  createEmbeddingAdapter,
+  BaseEmbeddingAdapter,
+  MockEmbeddingAdapter,
+  GeminiEmbeddingAdapter,
+  validateEmbeddingVector,
+  normalizeVector,
+  isCompatibleVectorSpace,
+  cosineSimilarity,
+  EmbeddingError,
+  MissingEmbeddingConfigurationError,
+  EmbeddingTimeoutError,
+  EmbeddingRateLimitError,
+  EmbeddingDimensionMismatchError,
+  EmbeddingInvalidResponseError,
+  IncompatibleVectorSpaceError,
+  EmbeddingProviderError
+};
+
+let defaultAdapter = null;
+
+function getDefaultAdapter() {
+  if (!defaultAdapter) {
+    defaultAdapter = createEmbeddingAdapter();
+  }
+  return defaultAdapter;
 }
 
-let genAI;
-if (GoogleGenerativeAI && config.GOOGLE_API_KEY && !config.DEMO_MODE) {
-  genAI = new GoogleGenerativeAI(config.GOOGLE_API_KEY);
-}
+/**
+ * Backward-compatible embedding generation function.
+ *
+ * @param {string} text - Input text to embed.
+ * @param {Object} [options] - Optional overrides.
+ * @returns {Promise<Array<number>>} Dense embedding vector values.
+ */
+export const generateEmbedding = async (text, options = {}) => {
+  const adapter = options.adapter || getDefaultAdapter();
+  const res = await adapter.embedQuery(text);
+  return res.vector;
+};
 
-function mockEmbed(text) {
-  const arr = new Float32Array(768);
-  for (let i = 0; i < text.length && i < 768; i++) {
-    arr[i % 768] += text.charCodeAt(i) / 1000;
-  }
-  const mag = Math.sqrt(arr.reduce((s, v) => s + v * v, 0)) || 1;
-  return Array.from(arr).map(v => v / mag);
-}
+/**
+ * Generates an embedding record containing both the dense vector and model metadata.
+ *
+ * @param {string} text - Input text.
+ * @param {Object} [options] - Optional overrides.
+ * @returns {Promise<Object>} Full embedding DTO with model metadata.
+ */
+export const generateEmbeddingRecord = async (text, options = {}) => {
+  const adapter = options.adapter || getDefaultAdapter();
+  return await adapter.embedQuery(text);
+};
 
-export const generateEmbedding = async (text) => {
-  if (config.DEMO_MODE || !genAI) {
-    return mockEmbed(text);
-  }
-  try {
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-    const result = await model.embedContent(text);
-    return result.embedding.values;
-  } catch (error) {
-    logger.error(`Error generating embedding: ${error.message}`);
-    throw error;
-  }
+export default {
+  generateEmbedding,
+  generateEmbeddingRecord,
+  createEmbeddingAdapter
 };
