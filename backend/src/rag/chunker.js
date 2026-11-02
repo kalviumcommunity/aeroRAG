@@ -7,6 +7,27 @@
 
 import { estimateTokenCountSync } from './tokenContextManager.js';
 import { isProceduralStep, isSafetyCritical, isTableLine } from './textCleaner.js';
+import {
+  DOCUMENT_TYPES,
+  APPLICABILITY_STATUSES,
+  VERIFICATION_STATUSES,
+  UNCERTAINTY_CODES,
+  validateDocumentMetadata,
+  formatChunkCitation,
+  propagateMetadataToChunks,
+  resolveDocumentRelationships
+} from './metadataManager.js';
+
+export {
+  DOCUMENT_TYPES,
+  APPLICABILITY_STATUSES,
+  VERIFICATION_STATUSES,
+  UNCERTAINTY_CODES,
+  validateDocumentMetadata,
+  formatChunkCitation,
+  propagateMetadataToChunks,
+  resolveDocumentRelationships
+};
 
 export const CHUNK_STRATEGIES = Object.freeze({
   FIXED_SIZE: 'fixed_size',
@@ -821,16 +842,27 @@ export function chunkText(text, optionsOrMaxTokens = {}, overlapTokens) {
   }
 
   const strategy = options.strategy || DEFAULT_CHUNK_CONFIG.strategy;
+  let chunks;
 
   switch (strategy) {
     case CHUNK_STRATEGIES.FIXED_SIZE:
-      return splitFixedSize(text, options);
+      chunks = splitFixedSize(text, options);
+      break;
     case CHUNK_STRATEGIES.HEADING_AWARE:
-      return splitHeadingAware(text, options);
+      chunks = splitHeadingAware(text, options);
+      break;
     case CHUNK_STRATEGIES.PROCEDURE_AWARE:
     default:
-      return splitProcedureAware(text, options);
+      chunks = splitProcedureAware(text, options);
+      break;
   }
+
+  const meta = options.documentMetadata || options.metadata;
+  if (meta && typeof meta === 'object') {
+    chunks = propagateMetadataToChunks(meta, chunks);
+  }
+
+  return chunks;
 }
 
 /**
@@ -937,12 +969,11 @@ export class DocumentChunker {
   }
 
   chunk(text, docMetadata = {}) {
-    const chunks = chunkText(text, this.options);
-    if (docMetadata && Object.keys(docMetadata).length > 0) {
-      for (const chunk of chunks) {
-        chunk.metadata = { ...docMetadata, ...chunk.metadata };
-      }
-    }
-    return chunks;
+    const meta = (docMetadata && Object.keys(docMetadata).length > 0)
+      ? docMetadata
+      : (this.options.documentMetadata || this.options.metadata || null);
+
+    const chunkOptions = meta ? { ...this.options, documentMetadata: meta } : this.options;
+    return chunkText(text, chunkOptions);
   }
 }

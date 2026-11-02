@@ -184,6 +184,41 @@ node backend/scripts/compare_chunking_strategies.js
 
 ---
 
+## 3.22 Chunk Metadata, Source Tracking & Document Versioning (Day 12)
+
+This milestone (`feat/day-12-document-version-metadata`) implements standardized chunk metadata schemas, source tracking, airline-specific document versioning, and relationship resolution, enforcing explicit uncertainty visibility and anti-fabrication controls.
+
+### Key Highlights
+- **Authoritative Document Metadata Schema:**
+  - Tracks `documentId`, `title`, `documentType` (`SOP`, `QRH`, `FCOM`, `FCTM`, `SAFETY_BULLETIN`, `REGULATORY_DIRECTIVE`, `POLICY`), `source`, `version`, `publicationDate`, `effectiveDate`, `expiryDate`, and `fleetApplicability`.
+  - Normalizes date representations to ISO 8601 strings and validates document type classifications.
+- **Explicit Applicability & Verification State Machine:**
+  - *Applicability Status:* `APPLICABLE`, `SUPERSEDED`, `HISTORICAL`, `CONDITIONAL`, `EXPIRED`, `NOT_APPLICABLE`, `UNKNOWN`.
+  - *Verification Status:* `VERIFIED_OFFICIAL`, `UNVERIFIED`, `CONFLICTING`, `PROVISIONAL`, `REVOKED`.
+- **The Three Core Safety Invariants:**
+  - **Rule 1 (Temporal Invariant):** A later publication date alone must **NOT** establish that a document supersedes another. General training manuals do not silently supersede aircraft-specific operating procedures. Unlinked overlapping documents are flagged as `CONFLICTING` with `TEMPORAL_SUPERSEDION_DISALLOWED`.
+  - **Rule 2 (Uncertainty Invariant):** Missing or conflicting metadata must remain visible as explicit uncertainty codes (`MISSING_DOCUMENT_ID`, `MISSING_PUBLICATION_DATE`, `MISSING_EFFECTIVE_DATE`, `UNVERIFIED_AUTHORITY`, `DOCUMENT_EXPIRED`, `CONFLICTING_VERSION_METADATA`).
+  - **Rule 3 (Anti-Fabrication Invariant):** Do **NOT** claim official validity (`VERIFIED_OFFICIAL`) without documented approval evidence (`approvalStatus` and `approvedBy`). Unverified drafts default to `UNVERIFIED`.
+- **Metadata Propagation & Authoritative Citations:**
+  - Propagates document identity, versioning, and verification attributes down to chunk records (`${documentId}_chunk_${chunkIndex}`).
+  - Generates standardized human-readable citation strings (e.g. `SOP-OPS-737-04 (Rev 4), Section: "Altimeter Setting Procedures", p. 12, Eff: 2024-03-01 [APPLICABLE / VERIFIED_OFFICIAL]`).
+- **Pluggable Integration:** Seamlessly integrated into `chunkText` and `DocumentChunker` via `propagateMetadataToChunks`.
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/DOCUMENT_VERSIONING_GUIDE.md`](docs/DOCUMENT_VERSIONING_GUIDE.md).
+
+### Running Metadata & Versioning Tests
+
+**Run Metadata Unit Tests:**
+```bash
+node --test backend/tests/metadataManager.test.js
+```
+
+**Run All Backend Tests (197 Passing Tests):**
+```bash
+npm --prefix backend test
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.
