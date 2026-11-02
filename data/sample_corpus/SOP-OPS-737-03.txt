@@ -1,0 +1,18 @@
+# BOEING 737 FLIGHT CREW OPERATING MANUAL
+## STANDARD OPERATING PROCEDURES — REVISION 3.0
+DOCUMENT ID: SOP-OPS-737-03
+EFFECTIVE DATE: 2021-06-01
+STATUS: SUPERSEDED
+
+### 1. STERILE FLIGHT DECK PROCEDURES
+Sterile flight deck procedures must be maintained during all critical phases of flight below 8,000 feet MSL. Non-operational conversation is prohibited during takeoff roll, initial climb through 8,000 feet, and final approach.
+
+During sterile cockpit periods:
+- Casual flight deck conversations are prohibited below 8,000 feet.
+- Flight attendants should minimize calls to the cockpit during takeoff and landing.
+- The 8,000 feet altitude was previously deemed sufficient for terminal airspace transitions under 2021 fleet rules.
+
+### 2. CLIMB AND DESCENT CALLOUTS
+At 8,000 feet MSL on departure, the PM calls "8,000 FEET". Sterile cockpit rules terminate.
+On descent through 8,000 feet MSL, PM calls "8,000 FEET". Sterile cockpit begins.
+

@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import ragRoutes from './routes/ragRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 const allowedOrigins = config.FRONTEND_URL.split(',').map(origin => origin.trim());
@@ -16,13 +17,14 @@ if (config.NODE_ENV !== 'production') {
 app.disable('x-powered-by');
 app.use(cors({
   origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/rag', ragRoutes);
 app.use('/api/health', healthRoutes);
 

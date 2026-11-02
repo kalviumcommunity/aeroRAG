@@ -56,7 +56,7 @@ export function validateRecord(record, expectedDimension) {
 
   if (record.vector.length !== expectedDimension) {
     throw new Error(
-      `Dimension mismatch: Collection '${expectedDimension}' requires ${expectedDimension}-dimensional vectors, but received ${record.vector.length}`
+      `Dimension mismatch: Collection '${this.name}' requires ${expectedDimension}-dimensional vectors, but received ${record.vector.length}`
     );
   }
 
@@ -212,6 +212,14 @@ export class VectorCollection {
 
   count() {
     return this.records.size;
+  }
+
+  /**
+   * Remove all records from the collection and persist the empty state.
+   */
+  clear() {
+    this.records.clear();
+    this.saveToDisk();
   }
 }
 

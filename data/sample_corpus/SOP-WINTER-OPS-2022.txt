@@ -1,0 +1,22 @@
+# AIRLINE GROUND OPERATIONS MANUAL
+## STANDARD OPERATING PROCEDURES — WINTER DE-ICING
+DOCUMENT ID: SOP-WINTER-OPS-2022
+VERSION: WIN-2022.2
+EFFECTIVE DATE: 2022-11-01
+EXPIRY DATE: 2023-04-30
+STATUS: EXPIRED
+DOCUMENT TYPE: Standard Operating Procedure
+
+### 1. HOLDOVER TIMES (HOT) FOR TYPE I AND TYPE IV FLUIDS
+Caution: This procedure expired on 2023-04-30. Revised seasonal holdover tables are published annually by Flight Operations Engineering.
+
+Holdover table guidelines:
+- Type I fluid (50/50 mix heated at 60C): Active frost at -3C to 0C provides 45 minutes holdover protection.
+- Freezing fog at -4C: Type I fluid provides 11 to 17 minutes holdover protection.
+- Type IV anti-icing fluid: Active snow provides 35 to 75 minutes holdover time depending on precipitation intensity.
+
+### 2. PRE-TAKEOFF CONTAMINATION CHECK
+If holdover time expires prior to takeoff:
+- Flight crew must request a secondary de-icing spray or perform a pre-takeoff contamination inspection from the cabin windows within 5 minutes of takeoff roll.
+- If wing contamination (snow, frost, or slush) is visually detected on upper wing surfaces or control tabs, takeoff is strictly prohibited until a complete de-icing cycle is repeated.
+

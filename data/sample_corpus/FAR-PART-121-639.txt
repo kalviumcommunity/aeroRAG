@@ -1,0 +1,20 @@
+# FEDERAL AVIATION ADMINISTRATION REGULATORY DIRECTIVE
+## 14 CFR PART 121.639 — FUEL REQUIREMENTS FOR DOMESTIC IFR FLIGHTS
+DOCUMENT ID: FAR-PART-121-639
+VERSION: REG-2023.1
+EFFECTIVE DATE: 2023-01-01
+STATUS: CURRENT
+DOCUMENT TYPE: Regulatory Directive
+
+### 1. GENERAL DOMESTIC DISPATCH FUEL RESERVES
+No person may dispatch or take off an airplane in domestic air carrier operations unless it carries enough fuel:
+(a) To fly to the airport to which it is dispatched (Trip Fuel);
+(b) Thereafter, to fly to and land at the most distant alternate airport specified in the dispatch release (Alternate Fuel); and
+(c) Thereafter, to fly for 45 minutes at normal cruising fuel consumption rate (Reserve Fuel).
+
+### 2. DISPATCH CONTINGENCY FUEL
+When destination weather indicates adverse conditions, convective SIGMETs, or expected air traffic holding delays:
+- Dispatchers must add minimum 15 minutes of contingency fuel.
+- In terminal areas with Ground Delay Programs (GDP), required expected delay fuel must be loaded in addition to the 45-minute statutory reserve.
+- Flight crew may not accept a dispatch release if the planned fuel at touchdown is less than the 45-minute FAR reserve requirement.
+

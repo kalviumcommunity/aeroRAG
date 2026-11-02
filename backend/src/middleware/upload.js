@@ -1,7 +1,6 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { randomUUID } from 'node:crypto';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -13,27 +12,36 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    const extension = path.extname(file.originalname).toLowerCase();
-    cb(null, `${randomUUID()}${extension}`);
+    // Sanitize original filename
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    cb(null, `${Date.now()}-${safeName}`);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  const extension = path.extname(file.originalname).toLowerCase();
-  const isPdf = extension === '.pdf' && file.mimetype === 'application/pdf';
-  const isText = extension === '.txt' && file.mimetype === 'text/plain';
-  if (isPdf || isText) {
+  const allowedExtensions = ['.pdf', '.txt', '.docx', '.html', '.htm', '.md', '.markdown'];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  const allowedMimetypes = [
+    'application/pdf',
+    'text/plain',
+    'text/html',
+    'text/markdown',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+    'application/octet-stream' // Browsers often send .docx or .md as octet-stream
+  ];
+
+  if (allowedExtensions.includes(ext) || allowedMimetypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    const error = new Error('Invalid file type. Only matching PDF and TXT files are allowed.');
-    error.statusCode = 400;
-    cb(error, false);
+    cb(new Error(`Invalid file type. Supported formats are PDF, TXT, DOCX, HTML, and Markdown (.pdf, .txt, .docx, .html, .md)`), false);
   }
 };
 
-const upload = multer({ 
+const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB for large aviation manuals
   fileFilter
 });
 

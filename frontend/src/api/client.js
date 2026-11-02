@@ -11,6 +11,19 @@ api.interceptors.request.use((request) => {
   return request;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      sessionStorage.removeItem('aerorag-token');
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.reload();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export function getErrorMessage(error) {
   if (error.response?.data?.error) return error.response.data.error;
   if (error.code === 'ECONNABORTED') return 'The request timed out. Please try again.';

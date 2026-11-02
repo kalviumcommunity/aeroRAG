@@ -14,10 +14,13 @@ export const queryRag = async (req, res, next) => {
     if (req.user) {
       await QueryHistory.create({
         userId: req.user._id,
-        query: query,
+        query: query.trim(),
         answer: result.answer,
         sources: result.sources,
-        retrievedChunks: result.retrievedChunks
+        citations: result.citations,
+        conflictAnalysis: result.conflictAnalysis,
+        retrievedChunks: result.retrievedChunks,
+        confidence: result.confidence
       });
     }
 

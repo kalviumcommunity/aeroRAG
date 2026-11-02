@@ -6,6 +6,7 @@
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "test": "node --test",
+    "seed": "node scripts/seed_sample_documents.js",
     "admin:bootstrap": "node scripts/bootstrap_admin.js",
     "experiment:params": "node scripts/run_parameter_experiments.js",
     "experiment:structured": "node scripts/run_structured_output_experiments.js",
@@ -20,6 +21,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.13.0",
     "mongoose": "^8.4.1",
     "multer": "^1.4.5-lts.1",
     "pdf-parse": "^1.1.1"

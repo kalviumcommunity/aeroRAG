@@ -1,0 +1,20 @@
+# BOEING 737 FLIGHT CREW OPERATING MANUAL
+## STANDARD OPERATING PROCEDURES — REVISION 4.0
+DOCUMENT ID: SOP-OPS-737-04
+EFFECTIVE DATE: 2024-01-15
+SUPERSEDES: SOP-OPS-737-03
+STATUS: CURRENT
+
+### 1. STERILE FLIGHT DECK PROCEDURES
+Sterile flight deck procedures must be strictly observed during all critical phases of flight below 10,000 feet MSL (Mean Sea Level). Critical phases include all ground operations involving pushback, taxi, takeoff roll, initial climb through 10,000 feet, descent below 10,000 feet, approach, landing, and taxi to gate.
+
+During sterile cockpit periods:
+- No non-essential flight deck conversations, personal discussions, or jokes are permitted.
+- Reading material unrelated to flight operations (e.g. newspapers, personal mobile devices) is strictly prohibited.
+- Flight attendants shall not contact the flight deck via interphone unless an immediate safety or emergency condition exists (e.g., fire, smoke, cabin pressure anomaly, medical emergency).
+- Any flight crew member who observes non-essential distractions shall issue the mandatory callout: "STERILE COCKPIT".
+
+### 2. CLIMB AND DESCENT VERIFICATION
+Upon climbing through 10,000 feet MSL, the Pilot Flying (PF) or Pilot Monitoring (PM) shall state: "10,000 FEET — STERILE COCKPIT TERMINATED". Recognition lights and landing lights may be turned OFF at pilot discretion.
+Upon descending through 10,000 feet MSL, the Pilot Monitoring shall call out: "10,000 FEET — STERILE COCKPIT IN EFFECT", and illuminate landing lights and fasten seatbelt signs.
+
