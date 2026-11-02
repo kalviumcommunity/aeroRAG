@@ -1,0 +1,19 @@
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - aerorag_mongodb:/data/db
+  chroma:
+    image: chromadb/chroma:0.5.23
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - aerorag_chroma:/chroma/chroma
+
+volumes:
+  aerorag_mongodb:
+  aerorag_chroma:

@@ -15,6 +15,8 @@ const documentSchema = new mongoose.Schema({
   fileType: { type: String, enum: ['pdf', 'txt'], required: true },
   pageCount: { type: Number },
   chunkCount: { type: Number, default: 0 },
+  processingStatus: { type: String, enum: ['PENDING', 'PROCESSING', 'READY', 'FAILED'], default: 'PENDING' },
+  processingError: { type: String, default: '' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 

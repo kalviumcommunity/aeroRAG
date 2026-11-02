@@ -50,7 +50,7 @@ export const SYSTEM_PROMPT = AIRLINE_SYSTEM_INSTRUCTIONS;
 
 export const GROUNDED_CONFIG = { ...DEFAULT_GROUNDED_PARAMETERS };
 
-function generateMockAnswer(contextChunks, options = {}) {
+function generateMockAnswer(query, contextChunks, options = {}) {
   if (!contextChunks || contextChunks.length === 0) {
     if (options.structured) {
       return JSON.stringify({
@@ -75,9 +75,14 @@ function generateMockAnswer(contextChunks, options = {}) {
   
   const sources = [...new Set(contextChunks.map(c => `${c.metadata?.documentId || c.id} - ${c.metadata?.documentTitle || c.metadata?.title || 'Procedure'} (Status: ${c.metadata?.status || 'APPROVED'})`))];
   const primaryDoc = contextChunks[0]?.metadata || {};
+  const documentId = primaryDoc.documentId || primaryDoc.source || 'UNKNOWN';
+  const title = primaryDoc.documentTitle || primaryDoc.document_title || 'Unknown source';
+  const passage = contextChunks[0].document;
+  const answer = `[DEMO MODE — EXTRACTIVE ONLY]\nRetrieved evidence for “${query}”:\n${passage}\n\nThis demo does not infer procedures beyond the retrieved passage. Verify the source document before acting.`;
 
   if (options.structured) {
     return JSON.stringify({
+      answer,
       answer: `Based on verified airline documentation (${primaryDoc.documentId || 'SOP-OPS-737-04'}), the requested procedure is strictly governed by approved operating standards.`,
       evidenceReferences: [
         {
@@ -99,38 +104,37 @@ function generateMockAnswer(contextChunks, options = {}) {
       refusalReason: null,
       // legacy compatibility
       source: {
-        documentId: primaryDoc.documentId || 'SOP-OPS-737-04',
-        title: primaryDoc.documentTitle || 'Boeing 737 Standard Operating Procedures',
-        status: primaryDoc.status || 'APPROVED',
-        effectiveDate: primaryDoc.effectiveDate || '2024-03-01'
+        documentId,
+        title,
+        status: primaryDoc.status || 'UNKNOWN',
+        ...(primaryDoc.effectiveDate || primaryDoc.effective_date
+          ? { effectiveDate: primaryDoc.effectiveDate || primaryDoc.effective_date }
+          : {})
       },
-      confidence: 0.95,
-      supersededNotes: primaryDoc.supersedes ? `Supersedes previous standard ${primaryDoc.supersedes}` : null,
+      confidence: 0.5,
+      supersededNotes: null,
       isGrounded: true
     });
   }
 
-  let answer = `[MOCK ANSWER - DEMO MODE]
-1. Direct answer: Based on the retrieved mock data, the requested procedure is covered in the following documents.
-2. Authoritative documents: ${sources.join(', ')}
-3. Supersession notes: Please verify the status of these documents carefully.`;
+  let mockAnswer = answer;
 
   // Apply stop sequences if specified
   if (options.stopSequences && Array.isArray(options.stopSequences)) {
     for (const seq of options.stopSequences) {
-      const idx = answer.indexOf(seq);
+      const idx = mockAnswer.indexOf(seq);
       if (idx !== -1) {
-        answer = answer.substring(0, idx);
+        mockAnswer = mockAnswer.substring(0, idx);
       }
     }
   }
 
   // Apply max output tokens limit (simulated approx 4 chars per token)
-  if (options.maxOutputTokens && answer.length > options.maxOutputTokens * 4) {
-    answer = answer.substring(0, options.maxOutputTokens * 4) + '... [TRUNCATED: max_tokens limit reached]';
+  if (options.maxOutputTokens && mockAnswer.length > options.maxOutputTokens * 4) {
+    mockAnswer = mockAnswer.substring(0, options.maxOutputTokens * 4) + '... [TRUNCATED: max_tokens limit reached]';
   }
 
-  return answer;
+  return mockAnswer;
 }
 
 export const generateAnswer = async (query, contextChunks, customOptions = {}) => {
@@ -145,7 +149,7 @@ export const generateAnswer = async (query, contextChunks, customOptions = {}) =
   };
 
   if (config.DEMO_MODE || !genAI) {
-    const mockRaw = generateMockAnswer(contextChunks, options);
+    const mockRaw = generateMockAnswer(query, contextChunks, options);
     if (options.structured) {
       return processLlmOutput(mockRaw);
     }
@@ -172,6 +176,7 @@ export const generateAnswer = async (query, contextChunks, customOptions = {}) =
 
     const modelName = options.model || config.LLM_MODEL || 'gemini-3.5-flash-lite';
     const model = genAI.getGenerativeModel({
+      model: config.LLM_MODEL,
       model: modelName,
       generationConfig
     });

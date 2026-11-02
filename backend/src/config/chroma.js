@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import config from './env.js';
 import logger from '../utils/logger.js';
 
@@ -12,6 +13,7 @@ try {
 }
 
 let chromaHttpClient = null;
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 if (ChromaClient && config.VECTOR_DB_URL) {
   try {
     chromaHttpClient = new ChromaClient({ path: config.VECTOR_DB_URL });
@@ -49,7 +51,7 @@ export const checkVectorDbHealth = async () => {
   }
 
   // Local persistent vector store fallback
-  const localDbDir = path.resolve(process.cwd(), 'data/vector_db');
+  const localDbDir = path.resolve(config.VECTOR_STORE_PATH || path.join(repositoryRoot, 'data/vector_db'));
   if (!fs.existsSync(localDbDir)) {
     fs.mkdirSync(localDbDir, { recursive: true });
   }
