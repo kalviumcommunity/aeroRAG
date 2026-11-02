@@ -39,15 +39,29 @@ This branch (`feat/day-06-prompt-templates`) implements maintainable, reusable p
 - **Reusable Template Engine (`PromptTemplate`):** Explicit placeholder parsing (`{{var}}`), missing variable validation (`TemplateValidationError`), and safe string rendering.
 - **Architecture Guide:** Comprehensive architectural guide in [`docs/PROMPT_TEMPLATES_GUIDE.md`](docs/PROMPT_TEMPLATES_GUIDE.md).
 
+---
+
+## 3.14 & 3.15 Tokens, Cost Estimation & Context Management (Day 7)
+
+This branch (`feat/day-07-token-context-management`) implements token estimation utilities, pricing-governed cost estimation, context window budget allocation, and bounded conversation history management.
+
+### Key Highlights
+- **Token Estimation & Counting:** Employs model tokenizers when online (`countTokens()`) or aviation-calibrated heuristic estimation (~3.8 chars/token) when offline, explicitly flagging whether token counts are exact or approximate.
+- **Configured Cost Calculation:** Computes prompt, completion, and total costs with 6-decimal precision **only** when verified pricing data is configured. Returns `pricingAvailable: false` and `totalCostUsd: null` for unconfigured models to prevent fabricated costs.
+- **Context Budget Allocation (`ContextBudgetManager`):** Partitions total context capacity (`MAX_CONTEXT_TOKENS`, default 8,192 tokens) across inviolable system instructions, model response headroom (`maxOutputTokens`: 500), and retrieved evidence.
+- **Safety Invariant (Evidence Protection):** **Never silently remove safety-critical evidence.** If retrieved airline procedures exceed available context headroom, the system throws an explicit `ContextBudgetExceededError` rather than silently omitting operational flight rules.
+- **Bounded Conversation History:** Deterministically trims dialogue turns using FIFO (preserving newest interactions) and executes pluggable summarization hooks (`summarizeHook`) when history overflows. Guards against oversized messages (`OversizedMessageError`).
+- **Architecture Guide:** Detailed architectural specification in [`docs/TOKEN_CONTEXT_MANAGEMENT_GUIDE.md`](docs/TOKEN_CONTEXT_MANAGEMENT_GUIDE.md).
+
 ### Running Tests
 
 **Run All Automated Tests:**
 ```bash
 npm --prefix backend test
 ```
-Or run the prompt template suite specifically:
+Or run the token and context manager test suite specifically:
 ```bash
-node --test backend/tests/promptTemplates.test.js
+node --test backend/tests/tokenContextManager.test.js
 ```
 
 ---
