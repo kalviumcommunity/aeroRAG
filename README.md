@@ -299,6 +299,51 @@ npm --prefix backend test
 
 ---
 
+## 3.28 Batch Embedding & Rate/Cost Management (Day 15)
+
+This milestone (`feat/day-15-batch-embedding-resilience`) implements a resilient batch embedding orchestration subsystem with configurable batch sizes, rate-limit retries with full exponential backoff and jitter, non-retryable error classification, partial batch failure handling, idempotent caching via stable content/model hashing, and usage accounting with transparent cost tracking.
+
+### Key Highlights
+- **Configurable Batch Ingestion Orchestration:**
+  - `BatchEmbeddingManager`: Batches incoming text chunks (`batchSize`, default: 32) to respect upstream API payload limits.
+  - Inter-batch pacing delay (`batchDelayMs`, default: 0) to avoid bursting against fixed requests-per-minute (RPM) quotas.
+  - Seamlessly integrated with document ingestion pipeline in `backend/src/rag/ingester.js`.
+- **Transient vs Permanent Error Classification:**
+  - **Transient Errors (Retryable):** Network drops (`ECONNRESET`, `ETIMEDOUT`, `ENOTFOUND`), HTTP 429 (rate limit / quota exceeded), and HTTP 5xx server errors (500, 502, 503, 504) are automatically retried with bounded backoff.
+  - **Permanent Errors (Non-Retryable):** Authentication/authorization failures (`401`, `403`, `EmbeddingAuthenticationError`), dimensional mismatches (`IncompatibleVectorSpaceError`), invalid payloads (`400`), and semantic input validation failures abort immediately on attempt 0 without wasting retry budgets or time.
+- **Bounded Exponential Backoff with Full Jitter:**
+  - Exponential backoff ceiling formula: $t_{ceiling} = \min(t_{max}, t_{base} \times 2^{\text{attempt}})$.
+  - **Full Jitter:** Sleep delay uniformly sampled: $U(0, t_{ceiling})$, decorrelating concurrent worker retries and eliminating synchronized "thundering herds".
+  - Priority header awareness: Respects upstream `retry-after` header when available.
+  - Configurable retry bounds (`maxRetries`: 3, `initialBackoffMs`: 500, `maxBackoffMs`: 8000). Throws `BatchEmbeddingExhaustedRetriesError` when retry threshold is exceeded.
+- **Partial Batch Failure Strategies:**
+  - `isolate_subbatch`: Safely isolates poison-pill chunks in mixed batches by recursively sub-batching down to individual single-item calls, embedding valid chunks while isolating invalid ones.
+  - `fail_batch`: Strictly rejects the batch if any chunk fails.
+  - `permissive`: Returns `null` for failed chunks while preserving valid embeddings for the rest.
+- **Idempotent Caching via Content/Model Hash:**
+  - Cache key computed with SHA-256: `hash(modelName:dimensions:text)`.
+  - Ensures repeated ingestion runs incur zero duplicate API calls and zero additional financial cost.
+  - Preserves vector space isolation: if model or dimension changes, cache automatically invalidates.
+- **Usage Accounting & Transparent Cost Estimation:**
+  - Tracks total batches, total texts embedded, cache hit/miss counts, retry counts, and input token counts.
+  - Transparent labeling: flags `isEstimated: false` when provider reports actual usage (e.g. Gemini `totalTokens`), and `isEstimated: true` when estimated via heuristic tokenizer.
+  - Cost tracking: Computes `costUsd` only when model pricing data is configured, otherwise reports `pricingAvailable: false` and `costUsd: null` without fabricating financial figures.
+- **Architecture Guide:** Comprehensive architectural documentation in [`docs/BATCH_EMBEDDING_GUIDE.md`](docs/BATCH_EMBEDDING_GUIDE.md).
+
+### Running Batch Embedding Tests
+
+**Run Batch Embedding Manager Unit Tests (27 Passing Tests):**
+```bash
+node --test backend/tests/batchEmbeddingManager.test.js
+```
+
+**Run All Backend Tests (269 Passing Tests):**
+```bash
+npm --prefix backend test
+```
+
+---
+
 ## 3.30 Vector Database Setup & Collection Design
 
 This milestone (`feat/3.30-vector-db-setup-collection-design`) implements vector store setup, dimensional integrity enforcement, and collection schema design storing dense embedding vectors, source text, and rich metadata.

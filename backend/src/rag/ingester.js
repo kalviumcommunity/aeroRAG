@@ -1,6 +1,11 @@
 import { extractText } from '../utils/textExtractor.js';
 import { chunkText } from './chunker.js';
-import { generateEmbedding } from './embedder.js';
+import {
+  generateEmbedding,
+  getDefaultBatchManager,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager
+} from './embedder.js';
 import { upsertChunks, deleteDocumentChunks } from './vectorStore.js';
 import Document from '../models/Document.js';
 import logger from '../utils/logger.js';
@@ -27,19 +32,19 @@ export const ingestDocument = async (documentId) => {
     throw new Error(`No text extracted from document ${documentId}`);
   }
 
-  // Embed and prepare for vector store
+  // Batch embed with rate limiting, bounded retries, and caching
+  const batchManager = getDefaultBatchManager();
+  const chunkTexts = chunks.map(c => c.text);
+  const embResult = await batchManager.embedTexts(chunkTexts);
+  const embeddings = embResult.embeddings.map(e => e.vector);
+
+  // Prepare metadata and store in vector store
   const ids = [];
-  const embeddings = [];
   const metadatas = [];
-  const chunkTexts = [];
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    const embedding = await generateEmbedding(chunk.text);
-    
     ids.push(`${doc.documentId}_chunk_${chunk.chunkIndex}`);
-    embeddings.push(embedding);
-    chunkTexts.push(chunk.text);
     metadatas.push({
       documentId: doc.documentId,
       documentTitle: doc.title,
@@ -84,7 +89,9 @@ export {
   DUPLICATE_STRATEGY,
   FAILURE_STAGES,
   computeContentHash,
-  countExtractedSections
+  countExtractedSections,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager
 };
 
 /**
