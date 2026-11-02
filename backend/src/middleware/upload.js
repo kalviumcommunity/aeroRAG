@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { randomUUID } from 'node:crypto';
 
 const uploadDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadDir)) {
@@ -12,15 +13,21 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    const extension = path.extname(file.originalname).toLowerCase();
+    cb(null, `${randomUUID()}${extension}`);
   }
 });
 
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype === 'application/pdf' || file.mimetype === 'text/plain') {
+  const extension = path.extname(file.originalname).toLowerCase();
+  const isPdf = extension === '.pdf' && file.mimetype === 'application/pdf';
+  const isText = extension === '.txt' && file.mimetype === 'text/plain';
+  if (isPdf || isText) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type, only PDF and TXT are allowed!'), false);
+    const error = new Error('Invalid file type. Only matching PDF and TXT files are allowed.');
+    error.statusCode = 400;
+    cb(error, false);
   }
 };
 

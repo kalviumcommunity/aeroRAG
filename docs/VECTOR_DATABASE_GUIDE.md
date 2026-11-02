@@ -92,3 +92,4 @@ When asked: *"How would you choose a vector database for production?"*, structur
 | **1:30 - 2:30** | **Collection Schema & Storage Strategy** | Highlight the schema: \`id\`, \`vector\`, \`text\`, \`metadata\`. Explain why text and metadata belong with the vector (avoids multi-hop database lookups, provides context for LLMs, enables citations). |
 | **2:30 - 3:30** | **Live Terminal Execution & Readback Demo** | Run \`node backend/scripts/run_vectordb_setup.js\` (or \`python backend/scripts/run_vectordb_setup.py\`). Show the terminal output: connection reachability, collection creation, test record insertion, and the readback showing matching ID, 768 vector length, text, and metadata. Show the dimension mismatch test being rejected! |
 | **3:30 - 4:15** | **Follow-up Question & Conclusion** | Answer the follow-up question: *"How would you choose a vector database for production?"* (Cover Scale, Hosting/Compliance, Payload Filtering, and Cost vs Managed SLAs). |
+

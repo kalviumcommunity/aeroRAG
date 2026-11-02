@@ -28,7 +28,7 @@ export const generateEmbedding = async (text) => {
     return mockEmbed(text);
   }
   try {
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    const model = genAI.getGenerativeModel({ model: config.EMBEDDING_MODEL });
     const result = await model.embedContent(text);
     return result.embedding.values;
   } catch (error) {

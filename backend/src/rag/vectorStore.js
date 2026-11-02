@@ -39,6 +39,11 @@ export const upsertChunks = async (chunks, embeddings, metadatas, ids) => {
 
 export const deleteDocumentChunks = async (documentId) => {
   const collection = await getOrInitCollection();
+  if (typeof collection.deleteDocumentChunks === 'function') {
+    const deletedCount = await collection.deleteDocumentChunks(documentId);
+    logger.info(`Deleted ${deletedCount} chunks for document ${documentId}`);
+    return deletedCount;
+  }
   let deletedCount = 0;
   for (const [id, record] of collection.records.entries()) {
     if (record.metadata.source === documentId || record.metadata.documentId === documentId) {

@@ -20,27 +20,40 @@ export const runRagPipeline = async (query, options = {}) => {
   const sourcesMap = new Map();
   retrievedChunks.forEach(chunk => {
     const m = chunk.metadata;
-    if (!sourcesMap.has(m.documentId)) {
-      sourcesMap.set(m.documentId, {
-        documentId: m.documentId,
-        title: m.documentTitle,
-        effectiveDate: m.effectiveDate,
-        status: m.status
+    const documentId = m.documentId ?? m.source;
+    if (documentId && !sourcesMap.has(documentId)) {
+      sourcesMap.set(documentId, {
+        documentId,
+        title: m.documentTitle ?? m.document_title ?? 'Untitled source',
+        effectiveDate: m.effectiveDate ?? m.effective_date ?? null,
+        status: m.status ?? 'UNKNOWN'
       });
     }
   });
 
-  const resolvedSources = (structuredData?.data?.source)
-    ? [structuredData.data.source]
-    : Array.from(sourcesMap.values());
+  const resolvedSources = Array.from(sourcesMap.values());
+  const citations = retrievedChunks.map(chunk => {
+    const metadata = chunk.metadata;
+    return {
+      documentId: metadata.documentId ?? metadata.source ?? null,
+      title: metadata.documentTitle ?? metadata.document_title ?? 'Untitled source',
+      status: metadata.status ?? 'UNKNOWN',
+      version: metadata.version ?? null,
+      effectiveDate: metadata.effectiveDate ?? metadata.effective_date ?? null,
+      section: metadata.section ?? null,
+      page: metadata.page ?? null,
+      passage: chunk.document
+    };
+  });
 
   return {
     answer: answerText,
     structured: structuredData,
     sources: resolvedSources,
+    citations,
     retrievedChunks: retrievedChunks.length,
-    confidence: structuredData?.data?.confidence ?? 0.9,
-    isGrounded: structuredData?.data?.isGrounded ?? true,
+    confidence: structuredData?.data?.confidence ?? (retrievedChunks.length > 0 ? 0.5 : 0),
+    isGrounded: retrievedChunks.length > 0 && (structuredData?.data?.isGrounded ?? true),
     demoMode: config.DEMO_MODE,
     generationOptions: options
   };

@@ -1,8 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'node:url';
 import config from '../config/env.js';
 import logger from '../utils/logger.js';
 import { getCollection, checkVectorDbHealth } from '../config/chroma.js';
+import { ChromaVectorCollection } from './chromaCollection.js';
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
 export const DEFAULT_COLLECTION_CONFIG = {
   name: config.COLLECTION_NAME || 'aerorag_chunks',
@@ -108,7 +112,7 @@ export class VectorCollection {
       "description": "AeroRAG airline procedure verification chunks"
     };
 
-    this.storageDir = path.resolve(process.cwd(), 'data/vector_db');
+    this.storageDir = path.resolve(config.VECTOR_STORE_PATH || path.join(repositoryRoot, 'data/vector_db'));
     if (!fs.existsSync(this.storageDir)) {
       fs.mkdirSync(this.storageDir, { recursive: true });
     }
@@ -220,6 +224,14 @@ export async function createCollection(options = {}) {
     dimension: options.dimension || DEFAULT_COLLECTION_CONFIG.dimension,
     metric: options.metric || DEFAULT_COLLECTION_CONFIG.metric
   };
+
+  if (!config.DEMO_MODE) {
+    const remoteCollection = await getCollection(collectionConfig.name);
+    if (remoteCollection) {
+      return new ChromaVectorCollection(remoteCollection, collectionConfig.dimension);
+    }
+    logger.warn('ChromaDB is unavailable; using the local persistent vector collection.');
+  }
 
   return new VectorCollection(collectionConfig);
 }
