@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * Milestone 3.25 & 3.26: Embedding Service Facade
+ * Milestone 3.25, 3.26 & 3.28: Embedding Service & Batch Resilience Facade
  * Airline Procedure Intelligence System
  * ============================================================================
  */
@@ -24,6 +24,16 @@ import {
   EmbeddingProviderError
 } from './embeddingAdapter.js';
 
+import {
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager,
+  isRetryableEmbeddingError,
+  calculateBackoffWithJitter,
+  computeEmbeddingCacheKey,
+  EmbeddingAuthenticationError,
+  BatchEmbeddingExhaustedRetriesError
+} from './batchEmbeddingManager.js';
+
 export {
   createEmbeddingAdapter,
   BaseEmbeddingAdapter,
@@ -40,16 +50,31 @@ export {
   EmbeddingDimensionMismatchError,
   EmbeddingInvalidResponseError,
   IncompatibleVectorSpaceError,
-  EmbeddingProviderError
+  EmbeddingProviderError,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager,
+  isRetryableEmbeddingError,
+  calculateBackoffWithJitter,
+  computeEmbeddingCacheKey,
+  EmbeddingAuthenticationError,
+  BatchEmbeddingExhaustedRetriesError
 };
 
 let defaultAdapter = null;
+let defaultBatchManager = null;
 
 function getDefaultAdapter() {
   if (!defaultAdapter) {
     defaultAdapter = createEmbeddingAdapter();
   }
   return defaultAdapter;
+}
+
+export function getDefaultBatchManager() {
+  if (!defaultBatchManager) {
+    defaultBatchManager = createBatchEmbeddingManager({ adapter: getDefaultAdapter() });
+  }
+  return defaultBatchManager;
 }
 
 /**
@@ -80,5 +105,7 @@ export const generateEmbeddingRecord = async (text, options = {}) => {
 export default {
   generateEmbedding,
   generateEmbeddingRecord,
-  createEmbeddingAdapter
+  createEmbeddingAdapter,
+  createBatchEmbeddingManager,
+  BatchEmbeddingManager
 };
