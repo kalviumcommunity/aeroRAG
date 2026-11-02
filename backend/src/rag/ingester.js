@@ -1,6 +1,11 @@
 import { extractText } from '../utils/textExtractor.js';
 import { chunkText } from './chunker.js';
-import { generateEmbedding } from './embedder.js';
+import {
+  generateEmbedding,
+  getDefaultBatchManager,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager
+} from './embedder.js';
 import { upsertChunks, deleteDocumentChunks } from './vectorStore.js';
 import Document from '../models/Document.js';
 import logger from '../utils/logger.js';
@@ -27,19 +32,19 @@ export const ingestDocument = async (documentId) => {
     throw new Error(`No text extracted from document ${documentId}`);
   }
 
-  // Embed and prepare for vector store
+  // Batch embed with rate limiting, bounded retries, and caching
+  const batchManager = getDefaultBatchManager();
+  const chunkTexts = chunks.map(c => c.text);
+  const embResult = await batchManager.embedTexts(chunkTexts);
+  const embeddings = embResult.embeddings.map(e => e.vector);
+
+  // Prepare metadata and store in vector store
   const ids = [];
-  const embeddings = [];
   const metadatas = [];
-  const chunkTexts = [];
 
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
-    const embedding = await generateEmbedding(chunk.text);
-    
     ids.push(`${doc.documentId}_chunk_${chunk.chunkIndex}`);
-    embeddings.push(embedding);
-    chunkTexts.push(chunk.text);
     metadatas.push({
       documentId: doc.documentId,
       documentTitle: doc.title,
@@ -65,4 +70,37 @@ export const ingestDocument = async (documentId) => {
 
   logger.info(`Successfully ingested document ${documentId}, chunks: ${chunks.length}`);
   return chunks.length;
+};
+
+import {
+  IngestionValidator,
+  validateCorpusIngestion,
+  INGESTION_STATUS,
+  DUPLICATE_STRATEGY,
+  FAILURE_STAGES,
+  computeContentHash,
+  countExtractedSections
+} from './ingestionValidator.js';
+
+export {
+  IngestionValidator,
+  validateCorpusIngestion,
+  INGESTION_STATUS,
+  DUPLICATE_STRATEGY,
+  FAILURE_STAGES,
+  computeContentHash,
+  countExtractedSections,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager
+};
+
+/**
+ * Ingests a corpus of documents with full validation and structured reporting.
+ *
+ * @param {Array<string|Object>} corpus - Array of file paths or document objects.
+ * @param {Object} [options] - Ingestion configuration options.
+ * @returns {Promise<Object>} Ingestion validation report.
+ */
+export const ingestCorpus = async (corpus, options = {}) => {
+  return await validateCorpusIngestion(corpus, options);
 };

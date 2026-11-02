@@ -3,49 +3,68 @@ import config from '../config/env.js';
 import logger from '../utils/logger.js';
 import {
   STRUCTURED_SYSTEM_PROMPT,
-  processLlmOutput
+  STRUCTURED_RAG_SCHEMA,
+  APPLICABILITY_STATUSES,
+  UNCERTAINTY_LEVELS,
+  REFUSAL_REASONS,
+  DOCUMENT_STATUSES,
+  processLlmOutput,
+  parseStructuredOutput,
+  validateStructuredOutput
 } from './structuredOutput.js';
+import {
+  createLLMClient,
+  getLLMClient,
+  LLMClientError,
+  MissingConfigurationError,
+  LLMTimeoutError,
+  RateLimitError,
+  InvalidResponseError,
+  ProviderError,
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES
+} from './llmClient.js';
+import {
+  AirlineProcedurePromptTemplate,
+  defaultAirlinePromptTemplate,
+  AIRLINE_SYSTEM_INSTRUCTIONS
+} from './promptTemplates.js';
 
 let genAI;
-if (config.GOOGLE_API_KEY && !config.DEMO_MODE) {
-  genAI = new GoogleGenerativeAI(config.GOOGLE_API_KEY);
+const activeApiKey = config.GOOGLE_API_KEY || config.GEMINI_API_KEY;
+if (activeApiKey && !config.DEMO_MODE) {
+  genAI = new GoogleGenerativeAI(activeApiKey);
 }
 
-const SYSTEM_PROMPT = `
-You are AeroRAG, an airline procedure verification assistant.
+export const SYSTEM_PROMPT = AIRLINE_SYSTEM_INSTRUCTIONS;
 
-Answer ONLY using the provided retrieved airline documents.
-Never invent procedures, regulations, dates, or operational instructions.
-If the retrieved documents do not contain enough information, clearly state:
-"I could not find sufficient information in the available airline documents."
-
-When multiple documents discuss the same procedure, prefer the latest valid document according to effective date and supersession metadata.
-Always identify the source document used for the answer.
-If an older document has been superseded, explicitly mention it should not be treated as the current procedure.
-
-Format your answer clearly with:
-1. Direct answer
-2. Which document is current/authoritative
-3. Any supersession notes
-`;
-
-export const GROUNDED_CONFIG = {
-  temperature: 0.1,
-  maxOutputTokens: 500,
-  topP: 0.8,
-  stopSequences: []
-};
+export const GROUNDED_CONFIG = { ...DEFAULT_GROUNDED_PARAMETERS };
 
 function generateMockAnswer(query, contextChunks, options = {}) {
   if (!contextChunks || contextChunks.length === 0) {
     if (options.structured) {
       return JSON.stringify({
         answer: "I could not find sufficient information in the available airline documents.",
-        source: {
-          documentId: "NONE",
-          title: "No Matching Documentation",
-          status: "N/A"
+        evidenceReferences: [],
+        applicabilityStatus: "NOT_APPLICABLE",
+        uncertainty: {
+          level: "COMPLETE",
+          score: 1.0,
+          reason: "No matching documentation found"
         },
+        refusalReason: "INSUFFICIENT_EVIDENCE",
+        // legacy compatibility
+        source: null,
         confidence: 0.0,
         supersededNotes: null,
         isGrounded: false
@@ -54,6 +73,7 @@ function generateMockAnswer(query, contextChunks, options = {}) {
     return "I could not find sufficient information in the available airline documents.";
   }
   
+  const sources = [...new Set(contextChunks.map(c => `${c.metadata?.documentId || c.id} - ${c.metadata?.documentTitle || c.metadata?.title || 'Procedure'} (Status: ${c.metadata?.status || 'APPROVED'})`))];
   const primaryDoc = contextChunks[0]?.metadata || {};
   const documentId = primaryDoc.documentId || primaryDoc.source || 'UNKNOWN';
   const title = primaryDoc.documentTitle || primaryDoc.document_title || 'Unknown source';
@@ -63,6 +83,26 @@ function generateMockAnswer(query, contextChunks, options = {}) {
   if (options.structured) {
     return JSON.stringify({
       answer,
+      answer: `Based on verified airline documentation (${primaryDoc.documentId || 'SOP-OPS-737-04'}), the requested procedure is strictly governed by approved operating standards.`,
+      evidenceReferences: [
+        {
+          documentId: primaryDoc.documentId || 'SOP-OPS-737-04',
+          title: primaryDoc.documentTitle || 'Boeing 737 Standard Operating Procedures',
+          section: primaryDoc.section || 'General Procedures',
+          page: primaryDoc.page || 1,
+          effectiveDate: primaryDoc.effectiveDate || '2024-03-01',
+          status: (primaryDoc.status || 'APPROVED').toUpperCase(),
+          quote: contextChunks[0]?.document ? contextChunks[0].document.substring(0, 150) : null
+        }
+      ],
+      applicabilityStatus: primaryDoc.status === 'SUPERSEDED' ? 'SUPERSEDED' : 'APPLICABLE',
+      uncertainty: {
+        level: "LOW",
+        score: 0.05,
+        reason: "Direct statement in current approved SOP"
+      },
+      refusalReason: null,
+      // legacy compatibility
       source: {
         documentId,
         title,
@@ -98,8 +138,13 @@ function generateMockAnswer(query, contextChunks, options = {}) {
 }
 
 export const generateAnswer = async (query, contextChunks, customOptions = {}) => {
+  // Validate model parameters
+  const paramValidation = validateModelParameters(customOptions, 'gemini', {
+    strict: Boolean(customOptions.strict)
+  });
   const options = {
     ...GROUNDED_CONFIG,
+    ...paramValidation.parameters,
     ...customOptions
   };
 
@@ -111,44 +156,32 @@ export const generateAnswer = async (query, contextChunks, customOptions = {}) =
     return mockRaw;
   }
 
-  const contextString = contextChunks.map((c, i) => `
---- Source ${i + 1} ---
-Document ID: ${c.metadata.documentId}
-Title: ${c.metadata.documentTitle}
-Status: ${c.metadata.status}
-Effective Date: ${c.metadata.effectiveDate}
-Supersedes: ${c.metadata.supersedes || 'None'}
-Content:
-${c.document}
-`).join('\n');
-
-  const selectedPrompt = options.structured ? STRUCTURED_SYSTEM_PROMPT : SYSTEM_PROMPT;
-
-  const prompt = `
-${selectedPrompt}
-
-User Query: ${query}
-
-Retrieved Documents:
-${contextString}
-`;
+  // Use maintainable prompt template
+  const templateBuilder = options.promptTemplate || defaultAirlinePromptTemplate;
+  const { fullPrompt } = templateBuilder.buildPrompt({
+    query,
+    chunks: contextChunks,
+    structured: Boolean(options.structured)
+  });
 
   try {
     const generationConfig = {
       temperature: options.temperature,
       maxOutputTokens: options.maxOutputTokens,
       topP: options.topP,
+      ...(options.topK ? { topK: options.topK } : {}),
       ...(options.stopSequences && options.stopSequences.length > 0 ? { stopSequences: options.stopSequences } : {}),
-      // Task 1: Use response-format / JSON mode where available
       ...(options.structured ? { responseMimeType: 'application/json' } : {})
     };
 
+    const modelName = options.model || config.LLM_MODEL || 'gemini-3.5-flash-lite';
     const model = genAI.getGenerativeModel({
       model: config.LLM_MODEL,
+      model: modelName,
       generationConfig
     });
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(fullPrompt);
     const rawText = result.response.text();
 
     if (options.structured) {
@@ -164,4 +197,38 @@ ${contextString}
 
 export const generateStructuredAnswer = async (query, contextChunks, customOptions = {}) => {
   return generateAnswer(query, contextChunks, { ...customOptions, structured: true });
+};
+
+export {
+  createLLMClient,
+  getLLMClient,
+  LLMClientError,
+  MissingConfigurationError,
+  LLMTimeoutError,
+  RateLimitError,
+  InvalidResponseError,
+  ProviderError,
+  AirlineProcedurePromptTemplate,
+  defaultAirlinePromptTemplate,
+  calculateCost,
+  estimateTokenCount,
+  estimateTokenCountSync,
+  ContextBudgetManager,
+  ContextBudgetExceededError,
+  OversizedMessageError,
+  validateModelParameters,
+  ModelParameterError,
+  ModelParameterValidationError,
+  UnsupportedParameterError,
+  DEFAULT_GROUNDED_PARAMETERS,
+  PROVIDER_CAPABILITIES,
+  STRUCTURED_SYSTEM_PROMPT,
+  STRUCTURED_RAG_SCHEMA,
+  APPLICABILITY_STATUSES,
+  UNCERTAINTY_LEVELS,
+  REFUSAL_REASONS,
+  DOCUMENT_STATUSES,
+  processLlmOutput,
+  parseStructuredOutput,
+  validateStructuredOutput
 };

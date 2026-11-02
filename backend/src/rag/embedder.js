@@ -1,26 +1,109 @@
-import config from '../config/env.js';
-import logger from '../utils/logger.js';
+/**
+ * ============================================================================
+ * Milestone 3.25, 3.26, 3.27, 3.28 & 3.29: Embedding Service, Batch Resilience,
+ * Similarity Metrics & Embedding Quality Evaluation Facade
+ * Airline Procedure Intelligence System
+ * ============================================================================
+ */
 
-let GoogleGenerativeAI = null;
-try {
-  const mod = await import('@google/generative-ai');
-  GoogleGenerativeAI = mod.GoogleGenerativeAI;
-} catch (e) {
-  // Not installed or offline
-}
+import {
+  createEmbeddingAdapter,
+  BaseEmbeddingAdapter,
+  MockEmbeddingAdapter,
+  GeminiEmbeddingAdapter,
+  validateEmbeddingVector,
+  normalizeVector,
+  isCompatibleVectorSpace,
+  cosineSimilarity,
+  EmbeddingError,
+  MissingEmbeddingConfigurationError,
+  EmbeddingTimeoutError,
+  EmbeddingRateLimitError,
+  EmbeddingDimensionMismatchError,
+  EmbeddingInvalidResponseError,
+  IncompatibleVectorSpaceError,
+  EmbeddingProviderError
+} from './embeddingAdapter.js';
 
-let genAI;
-if (GoogleGenerativeAI && config.GOOGLE_API_KEY && !config.DEMO_MODE) {
-  genAI = new GoogleGenerativeAI(config.GOOGLE_API_KEY);
-}
+import {
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager,
+  isRetryableEmbeddingError,
+  calculateBackoffWithJitter,
+  computeEmbeddingCacheKey,
+  EmbeddingAuthenticationError,
+  BatchEmbeddingExhaustedRetriesError
+} from './batchEmbeddingManager.js';
 
-function mockEmbed(text) {
-  const arr = new Float32Array(768);
-  for (let i = 0; i < text.length && i < 768; i++) {
-    arr[i % 768] += text.charCodeAt(i) / 1000;
+import {
+  computeCosineSimilarity,
+  computeEuclideanDistance,
+  computeDotProduct,
+  rankBySimilarity,
+  inspectVector,
+  validateVector,
+  SIMILARITY_SAFETY_DISCLAIMER,
+  SimilarityError,
+  InvalidVectorError,
+  VectorDimensionMismatchError,
+  ZeroVectorError
+} from './similarityValidator.js';
+
+import {
+  evaluateSimilarityQuality,
+  loadSimilarityEvaluationSet,
+  formatEvaluationReportMarkdown
+} from './similarityQualityEvaluator.js';
+
+export {
+  createEmbeddingAdapter,
+  BaseEmbeddingAdapter,
+  MockEmbeddingAdapter,
+  GeminiEmbeddingAdapter,
+  validateEmbeddingVector,
+  normalizeVector,
+  isCompatibleVectorSpace,
+  cosineSimilarity,
+  EmbeddingError,
+  MissingEmbeddingConfigurationError,
+  EmbeddingTimeoutError,
+  EmbeddingRateLimitError,
+  EmbeddingDimensionMismatchError,
+  EmbeddingInvalidResponseError,
+  IncompatibleVectorSpaceError,
+  EmbeddingProviderError,
+  BatchEmbeddingManager,
+  createBatchEmbeddingManager,
+  isRetryableEmbeddingError,
+  calculateBackoffWithJitter,
+  computeEmbeddingCacheKey,
+  EmbeddingAuthenticationError,
+  BatchEmbeddingExhaustedRetriesError,
+  // Day 16 additions (Milestones 3.27 & 3.29)
+  computeCosineSimilarity,
+  computeEuclideanDistance,
+  computeDotProduct,
+  rankBySimilarity,
+  inspectVector,
+  validateVector,
+  SIMILARITY_SAFETY_DISCLAIMER,
+  SimilarityError,
+  InvalidVectorError,
+  VectorDimensionMismatchError,
+  ZeroVectorError,
+  evaluateSimilarityQuality,
+  loadSimilarityEvaluationSet,
+  formatEvaluationReportMarkdown
+};
+
+let defaultAdapter = null;
+let defaultBatchManager = null;
+
+function getDefaultAdapter() {
+  if (!defaultAdapter) {
+    defaultAdapter = createEmbeddingAdapter();
   }
-  const mag = Math.sqrt(arr.reduce((s, v) => s + v * v, 0)) || 1;
-  return Array.from(arr).map(v => v / mag);
+  return defaultAdapter;
 }
 
 export const generateEmbedding = async (text) => {
@@ -34,5 +117,50 @@ export const generateEmbedding = async (text) => {
   } catch (error) {
     logger.error(`Error generating embedding: ${error.message}`);
     throw error;
+export function getDefaultBatchManager() {
+  if (!defaultBatchManager) {
+    defaultBatchManager = createBatchEmbeddingManager({ adapter: getDefaultAdapter() });
   }
+  return defaultBatchManager;
+}
+
+/**
+ * Backward-compatible embedding generation function.
+ *
+ * @param {string} text - Input text to embed.
+ * @param {Object} [options] - Optional overrides.
+ * @returns {Promise<Array<number>>} Dense embedding vector values.
+ */
+export const generateEmbedding = async (text, options = {}) => {
+  const adapter = options.adapter || getDefaultAdapter();
+  const res = await adapter.embedQuery(text);
+  return res.vector;
+};
+
+/**
+ * Generates an embedding record containing both the dense vector and model metadata.
+ *
+ * @param {string} text - Input text.
+ * @param {Object} [options] - Optional overrides.
+ * @returns {Promise<Object>} Full embedding DTO with model metadata.
+ */
+export const generateEmbeddingRecord = async (text, options = {}) => {
+  const adapter = options.adapter || getDefaultAdapter();
+  return await adapter.embedQuery(text);
+};
+
+export default {
+  generateEmbedding,
+  generateEmbeddingRecord,
+  createEmbeddingAdapter,
+  createBatchEmbeddingManager,
+  BatchEmbeddingManager,
+  computeCosineSimilarity,
+  computeEuclideanDistance,
+  computeDotProduct,
+  rankBySimilarity,
+  inspectVector,
+  validateVector,
+  evaluateSimilarityQuality,
+  SIMILARITY_SAFETY_DISCLAIMER
 };
