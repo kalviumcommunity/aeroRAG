@@ -4,17 +4,29 @@
 **/.env
 **/.env.*
 !**/.env.example
+backend/.env
+frontend/.env
 
 node_modules/
 **/node_modules/
 dist/
 **/dist/
+build/
+**/build/
+.vite/
+**/.vite/
 coverage/
 **/coverage/
 
 backend/uploads/
 uploads/
+temp/
 *.log
+server.log
+npm-debug.log*
+
+.DS_Store
+Thumbs.db
 
 data/vector_db/*
 !data/vector_db/aerorag_chunks.json

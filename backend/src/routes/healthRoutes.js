@@ -5,13 +5,33 @@ import config from '../config/env.js';
 
 const router = express.Router();
 
+router.get('/live', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+router.get('/ready', (req, res) => {
+  const isMongoConnected = mongoose.connection.readyState === 1;
+  if (!isMongoConnected) {
+    return res.status(503).json({ status: 'not_ready', mongodb: 'disconnected' });
+  }
+  return res.status(200).json({ status: 'ready', mongodb: 'connected' });
+});
+
 router.get('/', async (req, res) => {
   const chromaClient = getChromaClient();
+  const isMongoConnected = mongoose.connection.readyState === 1;
+
   const health = {
-    status: 'ok',
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    chromadb: chromaClient ? 'unknown' : 'local-fallback',
-    vectorStore: 'local-persistent',
+    status: isMongoConnected ? 'ok' : 'degraded',
+    backend: 'connected',
+    server: 'aeroRAG Express Flight Intelligence Backend',
+    version: '2.4.0',
+    port: config.PORT,
+    mongodb: isMongoConnected ? 'connected' : 'disconnected (in-memory demo)',
+    chromadb: chromaClient ? 'connected' : 'local-fallback',
+    vectorStore: config.DEMO_MODE ? 'local-mock' : 'chromadb',
+    vectorDimension: config.VECTOR_DIMENSION || 768,
+    llmModel: config.LLM_MODEL,
     demoMode: config.DEMO_MODE,
     timestamp: new Date().toISOString()
   };
@@ -26,21 +46,7 @@ router.get('/', async (req, res) => {
     }
   }
 
-  if (health.mongodb !== 'connected') health.status = 'degraded';
   res.json(health);
-});
-
-router.get('/live', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-router.get('/ready', (req, res) => {
-  const ready = mongoose.connection.readyState === 1;
-  res.status(ready ? 200 : 503).json({
-    status: ready ? 'ready' : 'not_ready',
-    mongodb: ready ? 'connected' : 'disconnected',
-    timestamp: new Date().toISOString()
-  });
 });
 
 export default router;

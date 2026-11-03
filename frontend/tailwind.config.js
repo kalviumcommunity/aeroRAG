@@ -1,20 +1,28 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./index.html', './src/**/*.{js,jsx}'],
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        ink: '#12283a',
-        muted: '#64748b',
-        paper: '#f5f7fa',
-        brand: '#136d67',
-        'brand-dark': '#0c514d',
-        line: '#e5eaf0'
+        hud: {
+          cyan: '#00f0ff',
+          amber: '#ffb800',
+          red: '#ff3838',
+          green: '#00ff88',
+          dark: '#050814',
+        }
       },
-      boxShadow: {
-        card: '0 12px 32px rgba(18, 40, 58, 0.07)'
+      fontFamily: {
+        orbitron: ['Orbitron', 'monospace'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+        sans: ['Rajdhani', 'Inter', 'sans-serif'],
       }
-    }
+    },
   },
-  plugins: []
-};
+  plugins: [],
+}
+
