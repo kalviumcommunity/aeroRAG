@@ -1,0 +1,14 @@
+{
+  "name": "aerorag-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "aeroRAG: Airline Procedure Intelligence & Glass Cockpit",
+  "scripts": {
+    "frontend": "npm --prefix frontend run dev",
+    "backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build",
+    "test": "npm --prefix backend test",
+    "evaluate:similarity": "npm --prefix backend run evaluate:similarity"
+  }
+}
+

@@ -1,0 +1,26 @@
+# Node dependencies
+node_modules/
+*/node_modules/
+
+# Production builds
+dist/
+build/
+*/dist/
+
+# Environment files
+.env
+.env.local
+backend/.env
+frontend/.env
+
+# Logs
+*.log
+npm-debug.log*
+server.log
+
+# Uploads & Temp
+backend/uploads/
+temp/
+.DS_Store
+Thumbs.db
+

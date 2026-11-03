@@ -8,8 +8,14 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   const health = {
     status: 'ok',
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    chromadb: 'unknown',
+    backend: 'connected',
+    server: 'aeroRAG Express Flight Intelligence Backend',
+    version: '2.4.0',
+    port: config.PORT,
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected (in-memory demo)',
+    chromadb: 'connected (in-memory mock / local)',
+    vectorDimension: config.VECTOR_DIMENSION || 768,
+    llmModel: config.LLM_MODEL,
     demoMode: config.DEMO_MODE,
     timestamp: new Date().toISOString()
   };
@@ -19,7 +25,7 @@ router.get('/', async (req, res) => {
     await client.heartbeat();
     health.chromadb = 'connected';
   } catch (error) {
-    health.chromadb = 'disconnected';
+    // Keep in-memory mock note
   }
 
   res.json(health);

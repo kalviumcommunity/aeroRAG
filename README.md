@@ -4,6 +4,54 @@ AeroRAG is an enterprise Retrieval-Augmented Generation (RAG) assistant designed
 
 ---
 
+## ✈️ 3D Cockpit HUD & Procedure Intelligence Frontend
+
+AeroRAG features a high-performance, glass-cockpit Cyberpunk web application with interactive 3D aerospace instruments, real-time RAG procedure intelligence, and live telemetry health audits.
+
+### Key Highlights
+- **Interactive 3D Three.js Aerospace Instrument Canvas:**
+  - **3D Jetliner Wireframe (Boeing 737 MAX):** Swept wings, navigation lights (green right, red left), twin turbofans, and real-time mouse-orbiting controls.
+  - **3D Tactical Waypoint Radar Globe:** Rotating 3D wireframe sphere with latitude/longitude grids and beacon waypoints.
+  - **3D Gyroscope Attitude Indicator:** Dual-axis pitch/roll gimbal rings with digital horizon core.
+  - **Cockpit HUD Overlay:** Airspeed tape (285 KTS / Mach 0.78), Altitude tape (FL 340 / 34,000 FT), and Heading compass (274° MAG).
+- **Procedure Intelligence Assistant:**
+  - RAG natural language operational query engine with Voice simulation and 1-click Quick Presets:
+    - 🚨 *Emergency Descent & Rapid Depressurization* (QRH Non-Normal)
+    - ⚠️ *Engine Failure After V1 on Takeoff* (FCTM Takeoff Profile)
+    - 🛑 *Sterile Flight Deck Regulations below 10,000 ft* (FAR 121.542)
+    - 🔄 *Missed Approach Go-Around Execution* (SOP Profile)
+    - ❄️ *Contaminated Runway Takeoff Calculation* (FAA SAFO / ICAO GRF)
+  - Numbered procedural checklists, `APPROVED` / `CURRENT` / `SUPERSEDED` status badges, confidence meters, and expandable grounded source citations.
+  - Mandatory FAA / EASA regulatory safety disclaimer on all ranking outputs.
+- **Flight Manuals Corpus Explorer:**
+  - Search and filter airline manuals (QRH, FCOM, FCTM, SOP, Bulletins).
+  - Drag-and-drop document upload interface with extraction parser.
+  - Visual warning alerts for superseded documents.
+- **Telemetry & Health Dashboard:**
+  - Real-time live backend roundtrip ping and latency tracker.
+  - Status nodes for Vector Store (768 dims, Cosine), LLM Adapter (Gemini / Mock), and Ingestion Validator.
+  - 1-Click **"TEST BACKEND LINK"** probe for instant connection verification.
+  - Token and financial cost metering ($0.00015 / query).
+
+### Running the Application
+
+**Start Backend Server (Port 5000):**
+```bash
+npm --prefix backend run dev
+```
+
+**Start Frontend Development Server (Port 5173):**
+```bash
+npm --prefix frontend run dev
+```
+
+**Build Frontend Production Bundle:**
+```bash
+npm --prefix frontend run build
+```
+
+---
+
 ## 3.12 LLM API Access & First Completion (Day 5)
 
 This milestone (`feat/day-05-llm-client`) implements a minimal, tested LLM client adapter that sends messages to a configurable chat model, normalizes completions, and guarantees safe, non-crashing error handling.
