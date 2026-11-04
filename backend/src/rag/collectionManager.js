@@ -1,3 +1,27 @@
+import {
+  QdrantVectorCollection,
+  VectorIndexingService,
+  validateVectorDimensions,
+  validateMetadataCompleteness,
+  validatePointCounts,
+  IndexingIntegrityError,
+  VectorDimensionMismatchError,
+  MetadataCompletenessError,
+  PointCountIntegrityError,
+  FailedIndexingError
+} from './vectorIndexingService.js';
+import {
+  generatePointId,
+  isValidPointId,
+  createQdrantClient,
+  InMemoryQdrantClient,
+  QdrantHttpClient
+} from './qdrantClient.js';
+import {
+  CanonicalMetadataRegistry,
+  getDefaultCanonicalRegistry
+} from './canonicalRegistry.js';
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
@@ -225,6 +249,13 @@ export async function createCollection(options = {}) {
     metric: options.metric || DEFAULT_COLLECTION_CONFIG.metric
   };
 
+  if (options.engine === 'qdrant') {
+    const client = options.qdrantClient || (await createQdrantClient(options));
+    const col = new QdrantVectorCollection(client, collectionConfig);
+    await col.ensureCollection();
+    return col;
+  }
+
   if (!config.DEMO_MODE) {
     const remoteCollection = await getCollection(collectionConfig.name);
     if (remoteCollection) {
@@ -235,3 +266,23 @@ export async function createCollection(options = {}) {
 
   return new VectorCollection(collectionConfig);
 }
+
+export {
+  QdrantVectorCollection,
+  VectorIndexingService,
+  validateVectorDimensions,
+  validateMetadataCompleteness,
+  validatePointCounts,
+  generatePointId,
+  isValidPointId,
+  createQdrantClient,
+  InMemoryQdrantClient,
+  QdrantHttpClient,
+  CanonicalMetadataRegistry,
+  getDefaultCanonicalRegistry,
+  IndexingIntegrityError,
+  VectorDimensionMismatchError,
+  MetadataCompletenessError,
+  PointCountIntegrityError,
+  FailedIndexingError
+};
