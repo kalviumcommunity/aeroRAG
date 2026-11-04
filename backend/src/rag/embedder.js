@@ -106,17 +106,6 @@ function getDefaultAdapter() {
   return defaultAdapter;
 }
 
-export const generateEmbedding = async (text) => {
-  if (config.DEMO_MODE || !genAI) {
-    return mockEmbed(text);
-  }
-  try {
-    const model = genAI.getGenerativeModel({ model: config.EMBEDDING_MODEL });
-    const result = await model.embedContent(text);
-    return result.embedding.values;
-  } catch (error) {
-    logger.error(`Error generating embedding: ${error.message}`);
-    throw error;
 export function getDefaultBatchManager() {
   if (!defaultBatchManager) {
     defaultBatchManager = createBatchEmbeddingManager({ adapter: getDefaultAdapter() });

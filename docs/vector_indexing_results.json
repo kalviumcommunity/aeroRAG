@@ -1,0 +1,137 @@
+{
+  "timestamp": "2026-11-03T06:21:35.044Z",
+  "milestone": "3.31",
+  "description": "Indexing embeddings and metadata storage with Qdrant",
+  "databaseHealth": {
+    "status": "READY",
+    "mode": "qdrant-inmemory-double",
+    "endpoint": "http://localhost:6333",
+    "latencyMs": 40
+  },
+  "task1_stableIdentifiers": {
+    "sampleDocId": "SOP-AIR-787-ICE",
+    "chunk0PointId": "5ec57750-5336-509d-84eb-54c0173d3ff9",
+    "isDeterministic": true,
+    "isValidRFC4122UUID": true,
+    "distinctChunkIndexGivesDistinctUUID": true
+  },
+  "task2_endToEndIndexing": {
+    "totalDocuments": 3,
+    "totalPointsIndexed": 3,
+    "totalCollectionPoints": 3,
+    "vectorDimension": 768,
+    "documentsIndexed": [
+      {
+        "documentId": "SOP-AIR-787-ICE",
+        "points": 1,
+        "status": "INDEXED",
+        "durationMs": 9
+      },
+      {
+        "documentId": "QRH-AIR-320-SMK",
+        "points": 1,
+        "status": "INDEXED",
+        "durationMs": 2
+      },
+      {
+        "documentId": "SB-OPS-2024-11",
+        "points": 1,
+        "status": "INDEXED",
+        "durationMs": 3
+      }
+    ]
+  },
+  "task3_idempotentReingestion": {
+    "targetDocument": "QRH-AIR-320-SMK",
+    "pointsBefore": 3,
+    "firstReingestStatus": "IDEMPOTENT_SKIPPED",
+    "pointsAfterFirstReingest": 3,
+    "uncontrolledDuplicatesCreatedRun1": 0,
+    "secondReingestForceStatus": "INDEXED",
+    "pointsAfterSecondReingest": 3,
+    "uncontrolledDuplicatesCreatedRun2": 0,
+    "isIdempotent": true
+  },
+  "task4_revisionAndOrphanPruning": {
+    "updatedDocument": "SOP-AIR-787-ICE",
+    "newVersion": "4.0",
+    "newChunkCount": 1,
+    "collectionCountBeforeRevision": 3,
+    "collectionCountAfterRevision": 3,
+    "orphanedPointsPruned": true
+  },
+  "task5_canonicalLinkage": {
+    "documentId": "SB-OPS-2024-11",
+    "title": "Winter Operations: Runway Condition Assessment & TALPA Matrix",
+    "version": "1.0",
+    "status": "APPLICABLE",
+    "effectiveDate": "2024-11-01T00:00:00.000Z",
+    "pointCount": 1,
+    "firstPointUUID": "f765804c-3f3a-578d-8372-c7672bfe161f",
+    "resolvedBackToCanonicalDocId": "SB-OPS-2024-11",
+    "resolvedChunkIndex": 0
+  },
+  "task6_integrityChecks": {
+    "dimensionVerification": {
+      "expectedDimension": 768,
+      "vectorsVerified": 2,
+      "passed": true
+    },
+    "metadataCompleteness": {
+      "verifiedFields": [
+        "document_id",
+        "chunk_index",
+        "text",
+        "status"
+      ],
+      "passed": true
+    },
+    "pointCountParity": {
+      "passed": true
+    }
+  },
+  "task7_retrievalVerification": [
+    {
+      "query": "cockpit smoke and oxygen mask emergency",
+      "topHits": [
+        {
+          "pointId": "8197819c-37f5-5969-87f1-fe04a3f29db1",
+          "score": 0.4052,
+          "citation": "QRH-AIR-320-SMK (5.0), p. 1, Eff: 2024-06-01 [APPLICABLE / VERIFIED_OFFICIAL]",
+          "textSnippet": "EMERGENCY PROCEDURE: SMOKE / COCKPIT FUMES (MEMORY ITEMS) WARNING: Flight crew safety is primary. Do not delay emergency..."
+        },
+        {
+          "pointId": "5ec57750-5336-509d-84eb-54c0173d3ff9",
+          "score": 0.0634,
+          "citation": "SOP-AIR-787-ICE (4.0), Section: \"SECTION 1: REVISED ICING CRITERIA\", p. 1, Eff: 2025-06-01 [APPLICABLE / VERIFIED_OFFICIAL]",
+          "textSnippet": "[SECTION 1: REVISED ICING CRITERIA] SECTION 1: REVISED ICING CRITERIA Icing conditions exist when Outside Air Temperatu..."
+        }
+      ]
+    },
+    {
+      "query": "winter runway surface braking action and TALPA matrix",
+      "topHits": [
+        {
+          "pointId": "f765804c-3f3a-578d-8372-c7672bfe161f",
+          "score": 0.376,
+          "citation": "SB-OPS-2024-11 (1.0), p. 1, Eff: 2024-11-01 [APPLICABLE / VERIFIED_OFFICIAL]",
+          "textSnippet": "OVERVIEW: RUNWAY CONDITION CODES (RWYCC) In accordance with FAA Takeoff and Landing Performance Assessment (TALPA) crite..."
+        },
+        {
+          "pointId": "8197819c-37f5-5969-87f1-fe04a3f29db1",
+          "score": 0.0182,
+          "citation": "QRH-AIR-320-SMK (5.0), p. 1, Eff: 2024-06-01 [APPLICABLE / VERIFIED_OFFICIAL]",
+          "textSnippet": "EMERGENCY PROCEDURE: SMOKE / COCKPIT FUMES (MEMORY ITEMS) WARNING: Flight crew safety is primary. Do not delay emergency..."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "acceptanceCriteriaMet": true,
+    "endToEndIngestionPassed": true,
+    "idempotentReingestionPassed": true,
+    "duplicatePointsCreated": 0,
+    "totalPointsStored": 3,
+    "durationMs": 14
+  }
+}
